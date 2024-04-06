@@ -1,0 +1,91 @@
+/* AdminPage.css */
+
+/* Container styling */
+.admin-container {
+  background-color: #f0f0f0; /* Light gray background */
+  padding: 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Title styling */
+.admin-title {
+  font-size: 48px;
+  margin-bottom: 30px;
+  color: #333; /* Dark gray text color */
+  text-align: center;
+}
+
+/* Navigation styling */
+.admin-nav {
+  margin-bottom: 30px;
+}
+
+.admin-nav-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+}
+
+.admin-nav-item {
+  margin-right: 20px;
+}
+
+.admin-nav-link {
+  text-decoration: none;
+  color: #007bff; /* Blue link color */
+  font-weight: bold;
+  padding: 10px 15px;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.admin-nav-link:hover {
+  background-color: #f8f9fa; /* Light gray background on hover */
+}
+
+/* Dropdown menu */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f8f9fa; /* Light gray background */
+  min-width: 160px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Shadow */
+  border-radius: 5px;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333; /* Dark gray text color */
+}
+
+.dropdown-item:hover {
+  background-color: #007bff; /* Blue background on hover */
+  color: #fff; /* White text color on hover */
+}
+
+/* Placeholder styling */
+.admin-placeholder {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.admin-placeholder-item {
+  background-color: #fff; /* White background */
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Shadow */
+}
