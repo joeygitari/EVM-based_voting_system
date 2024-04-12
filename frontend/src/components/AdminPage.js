@@ -17,16 +17,17 @@ const AdminPage = () => {
               <div className="dropdown-content">
                 <NavLink to="/PendingVotersPage" className="dropdown-item">Pending Registers</NavLink>
                 <NavLink to="/ApprovedVoters" className="dropdown-item">Approved Voters</NavLink>
+                <NavLink to="/CandidateApproval" className="dropdown-item">Pendinng Candidate</NavLink>
                 <NavLink to="/RejectedVoters" className="dropdown-item">Rejected Voters</NavLink>
               </div>
             </div>
           </li>
           <li className="admin-nav-item">
             <div className="dropdown">
-              <span className="admin-nav-link">Polls</span>
+              <span className="admin-nav-link">Election</span>
               <div className="dropdown-content">
-                <NavLink to="/Elections" className="dropdown-item">Create Poll</NavLink>
-                <NavLink to="/admin/view-polls" className="dropdown-item">View Polls</NavLink>
+                <NavLink to="/Elections" className="dropdown-item">Create election</NavLink>
+                <NavLink to="/ElectionDetails" className="dropdown-item">View elections</NavLink>
               </div>
             </div>
           </li>

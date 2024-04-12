@@ -30,10 +30,12 @@ class VotingService {
     if (!this.contract) {
       await this.connectToMetamask();
     }
+    console.log('Contract instance:', this.contract);
+    console.log('Method name:', methodName);
+    console.log('Method exists:', typeof this.contract[methodName]);
     if (this.contract && typeof this.contract[methodName] === 'function') {
       try {
-        const result = await this.contract[methodName](...args);
-        return result;
+        return this.contract[methodName](...args);
       } catch (error) {
         console.error(`Error calling ${methodName}:`, error);
         throw error;
@@ -75,39 +77,21 @@ class VotingService {
   async createElection(name, startTime, endTime) {
     return this.callContractMethod('createElection', name, startTime, endTime);
   }
-  async getElection(electionId) {
-    try {
-      const result = await this.callContractMethod('getElection', electionId);
-      const [name, isOpen, startTime, endTime, positionNames] = result;
-      return {
-        id: electionId,
-        name,
-        isOpen,
-        startTime: startTime.toNumber(),
-        endTime: endTime.toNumber(),
-        positionNames,
-      };
-    } catch (error) {
-      console.error('Error calling getElection:', error);
-      throw error;
-    }
-  }
 
   async createPosition(electionId, positionName) {
     return this.callContractMethod('createPosition', electionId, positionName);
   }
 
-  async addCandidates(electionId, positionName, candidateNames) {
-    try {
-      const election = await this.getElection(electionId);
-      if (!election) {
-        throw new Error(`Election with ID ${electionId} not found`);
-      }
-      return this.callContractMethod('addCandidates', electionId, positionName, candidateNames);
-    } catch (error) {
-      console.error('Error adding candidates:', error);
-      throw error;
-    }
+  async registerCandidate(electionId, positionName, candidateName) {
+    return this.callContractMethod('registerCandidate', electionId, positionName, candidateName);
+  }
+
+  async approveCandidate(electionId, positionName, candidateId) {
+    return this.callContractMethod('approveCandidate', electionId, positionName, candidateId);
+  }
+
+  async rejectCandidate(electionId, positionName, candidateId) {
+    return this.callContractMethod('rejectCandidate', electionId, positionName, candidateId);
   }
 
   async openElection(electionId) {
@@ -118,16 +102,42 @@ class VotingService {
     return this.callContractMethod('closeElection', electionId);
   }
 
+  async extendElectionTime(electionId, newEndTime) {
+    return this.callContractMethod('extendElectionTime', electionId, newEndTime);
+  }
+
   async vote(electionId, positionName, candidateId) {
     return this.callContractMethod('vote', electionId, positionName, candidateId);
   }
 
   async getElectionResult(electionId, positionName) {
-    return this.callContractMethod('getElectionResult', electionId, positionName);
+    try {
+      const result = await this.callContractMethod('getElectionResult', electionId, positionName);
+      const [name, candidateIds, voteCounts] = result;
+      return {
+        positionName: name,
+        candidateIds: candidateIds.map(id => id.toNumber()),
+        voteCounts: voteCounts.map(count => count.toNumber()),
+      };
+    } catch (error) {
+      console.error('Error calling getElectionResult:', error);
+      throw error;
+    }
   }
 
   async getElectionProgress(electionId, positionName) {
-    return this.callContractMethod('getElectionProgress', electionId, positionName);
+    try {
+      const result = await this.callContractMethod('getElectionProgress', electionId, positionName);
+      const [name, candidateIds, voteCounts] = result;
+      return {
+        positionName: name,
+        candidateIds: candidateIds.map(id => id.toNumber()),
+        voteCounts: voteCounts.map(count => count.toNumber()),
+      };
+    } catch (error) {
+      console.error('Error calling getElectionProgress:', error);
+      throw error;
+    }
   }
 
   async getVoter(voterAddress) {
@@ -192,12 +202,120 @@ class VotingService {
   }
 
   async getElection(electionId) {
-    return this.callContractMethod('getElection', electionId);
+    try {
+      console.log('Calling getElection with electionId:', electionId);
+      const result = await this.callContractMethod('getElection', electionId);
+      console.log('Result returned from getElection:', result);
+  
+      if (result && Array.isArray(result)) {
+        const [name, isOpen, startTime, endTime, positionNames] = result;
+        console.log('Destructured values from result:', {
+          name,
+          isOpen,
+          startTime,
+          endTime,
+          positionNames,
+        });
+  
+        const election = {
+          id: electionId,
+          name,
+          isOpen,
+          startTime: parseInt(startTime, 10),
+          endTime: parseInt(endTime, 10),
+          positionNames,
+        };
+        console.log('Returning election object:', election);
+        return election;
+      } else {
+        console.error('Invalid election data:', result);
+        throw new Error('Invalid election data');
+      }
+    } catch (error) {
+      console.error('Error calling getElection:', error);
+      throw error;
+    }
   }
-
+  
   async getElectionCount() {
     return this.callContractMethod('electionCount');
   }
+
+  async getCandidate(electionId, candidateId) {
+    try {
+      const result = await this.callContractMethod('getCandidate', electionId, candidateId);
+      const [id, name, voteCount, approved] = result;
+      return {
+        id: id.toNumber(),
+        name,
+        voteCount: voteCount.toNumber(),
+        approved,
+      };
+    } catch (error) {
+      console.error('Error calling getCandidate:', error);
+      throw error;
+    }
+  }
+
+  async getCandidates(electionId, positionName) {
+    try {
+      const election = await this.getElection(electionId);
+      if (!election) {
+        throw new Error(`Election with ID ${electionId} not found`);
+      }
+
+      const candidateIds = await this.callContractMethod('getCandidateIds', electionId, positionName);
+      const candidates = await Promise.all(
+        candidateIds.map(async (candidateId) => {
+          const candidate = await this.getCandidate(electionId, candidateId);
+          return candidate;
+        })
+      );
+
+      return candidates;
+    } catch (error) {
+      console.error('Error getting candidates:', error);
+      throw error;
+    }
+  }
+
+  async getRegisteredCandidates() {
+    try {
+      const electionCount = await this.getElectionCount();
+      const registeredCandidates = [];
+  
+      for (let electionId = 1; electionId <= electionCount; electionId++) {
+        const election = await this.getElection(electionId);
+        const { positionNames } = election;
+  
+        for (const positionName of positionNames) {
+          const [candidateIds, candidateNames, candidateApprovals] = await this.callContractMethod('getRegisteredCandidates', electionId, positionName);
+  
+          for (let i = 0; i < candidateIds.length; i++) {
+            const candidateId = candidateIds[i];
+            const candidateName = candidateNames[i];
+            const candidateApproval = candidateApprovals[i];
+  
+            if (!candidateApproval) {
+              registeredCandidates.push({
+                id: `${electionId}-${positionName}-${candidateId}`, // Generate a unique identifier
+                name: candidateName,
+                electionId,
+                electionName: election.name,
+                positionName,
+              });
+            }
+          }
+        }
+      }
+  
+      return registeredCandidates;
+    } catch (error) {
+      console.error('Error fetching registered candidates:', error);
+      throw error;
+    }
+  }
+    
 
   async listenToContractEvents(eventName, callback) {
     if (!this.contract) {

@@ -97,6 +97,8 @@ const VoterRegistrationForm = () => {
       <p className="registration-link">
         Already registered?{' '}
         <Link to="/login">Go to Login</Link>
+        <h1>Or</h1>
+        <Link to="/CandidateForm">Go to Candidate Registration form page</Link>
       </p>
     </div>
   );

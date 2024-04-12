@@ -20,6 +20,7 @@ contract Voting is Ownable, ReentrancyGuard {
         uint256 id;
         string name;
         uint256 voteCount;
+        bool approved;
     }
 
     struct Position {
@@ -50,13 +51,16 @@ contract Voting is Ownable, ReentrancyGuard {
     event VoterRejected(address indexed voterAddress, string email);
     event ElectionCreated(uint256 indexed electionId, string name);
     event PositionCreated(uint256 indexed electionId, string positionName);
-    event CandidatesAdded(uint256 indexed electionId, string positionName, string[] candidateNames);
+    event CandidateRegistered(uint256 indexed electionId, string positionName, string candidateName);
+    event CandidateApproved(uint256 indexed electionId, string positionName, string candidateName);
+    event CandidateRejected(uint256 indexed electionId, string positionName, string candidateName);
     event ElectionOpened(uint256 indexed electionId);
     event ElectionClosed(uint256 indexed electionId);
     event VoteCast(uint256 indexed electionId, address indexed voterAddress, string positionName, uint256 indexed candidateId);
     event RegisteredAddressesReset();
     event ElectionStarted();
     event ElectionEnded();
+    event ElectionTimeExtended(uint256 indexed electionId, uint256 newEndTime);
 
     bool public electionStarted;
     bool public electionEnded;
@@ -183,27 +187,95 @@ contract Voting is Ownable, ReentrancyGuard {
         emit PositionCreated(_electionId, _positionName);
     }
 
-    function addCandidates(uint256 _electionId, string memory _positionName, string[] memory _candidateNames)
+    function registerCandidate(uint256 _electionId, string memory _positionName, string memory _candidateName)
+        public
+        validElection(_electionId)
+        validPosition(_electionId, _positionName)
+        electionNotStarted(_electionId)
+    {
+        require(!candidateNameExists[_electionId][_positionName][_candidateName], "Candidate name already exists");
+
+        candidateCounts[_electionId]++;
+        uint256 candidateId = candidateCounts[_electionId];
+        candidatesByElection[_electionId][candidateId] = Candidate(candidateId, _candidateName, 0, false);
+
+        candidateNameExists[_electionId][_positionName][_candidateName] = true;
+
+        emit CandidateRegistered(_electionId, _positionName, _candidateName);
+    }
+
+    function approveCandidate(uint256 _electionId, string memory _positionName, uint256 _candidateId)
         public
         onlyOwner
         validElection(_electionId)
         validPosition(_electionId, _positionName)
         electionNotStarted(_electionId)
     {
-        require(_candidateNames.length >= 2, "At least two candidates are required for a position");
+        Candidate storage candidate = candidatesByElection[_electionId][_candidateId];
+        require(!candidate.approved, "Candidate is already approved");
 
-        for (uint256 i = 0; i < _candidateNames.length; i++) {
-            require(!candidateNameExists[_electionId][_positionName][_candidateNames[i]], "Candidate name already exists");
+        candidate.approved = true;
+        elections[_electionId].positions[_positionName].candidateIds.push(_candidateId);
 
-            candidateCounts[_electionId]++;
-            uint256 candidateId = candidateCounts[_electionId];
-            candidatesByElection[_electionId][candidateId] = Candidate(candidateId, _candidateNames[i], 0);
-            elections[_electionId].positions[_positionName].candidateIds.push(candidateId);
+        emit CandidateApproved(_electionId, _positionName, candidate.name);
+    }
+    function getRegisteredCandidates(uint256 _electionId, string memory _positionName)
+        public
+        view
+        validElection(_electionId)
+        validPosition(_electionId, _positionName)
+        returns (uint256[] memory, string[] memory, bool[] memory)
+    {
+        uint256 count = candidateCounts[_electionId];
+        uint256[] memory candidateIds = new uint256[](count);
+        string[] memory candidateNames = new string[](count);
+        bool[] memory candidateApprovals = new bool[](count);
 
-            candidateNameExists[_electionId][_positionName][_candidateNames[i]] = true;
+        uint256 index = 0;
+        for (uint256 candidateId = 1; candidateId <= count; candidateId++) {
+            Candidate storage candidate = candidatesByElection[_electionId][candidateId];
+            if (candidateNameExists[_electionId][_positionName][candidate.name]) {
+                candidateIds[index] = candidateId;
+                candidateNames[index] = candidate.name;
+                candidateApprovals[index] = candidate.approved;
+                index++;
+            }
         }
 
-        emit CandidatesAdded(_electionId, _positionName, _candidateNames);
+        // Resize the arrays to remove any empty slots
+        assembly {
+            mstore(candidateIds, index)
+            mstore(candidateNames, index)
+            mstore(candidateApprovals, index)
+        }
+
+        return (candidateIds, candidateNames, candidateApprovals);
+    }
+
+    function rejectCandidate(uint256 _electionId, string memory _positionName, uint256 _candidateId)
+        public
+        onlyOwner
+        validElection(_electionId)
+        validPosition(_electionId, _positionName)
+        electionNotStarted(_electionId)
+    {
+        Candidate storage candidate = candidatesByElection[_electionId][_candidateId];
+        require(!candidate.approved, "Candidate is already approved");
+
+        string memory candidateName = candidate.name;
+        delete candidateNameExists[_electionId][_positionName][candidateName];
+        delete candidatesByElection[_electionId][_candidateId];
+
+        uint256[] storage candidateIds = elections[_electionId].positions[_positionName].candidateIds;
+        for (uint256 i = 0; i < candidateIds.length; i++) {
+            if (candidateIds[i] == _candidateId) {
+                candidateIds[i] = candidateIds[candidateIds.length - 1];
+                candidateIds.pop();
+                break;
+            }
+        }
+
+        emit CandidateRejected(_electionId, _positionName, candidateName);
     }
 
     function openElection(uint256 _electionId) public onlyOwner validElection(_electionId) {
@@ -224,6 +296,15 @@ contract Voting is Ownable, ReentrancyGuard {
         emit ElectionClosed(_electionId);
     }
 
+    function extendElectionTime(uint256 _electionId, uint256 _newEndTime) public onlyOwner validElection(_electionId) {
+        Election storage election = elections[_electionId];
+        require(election.isOpen, "Election is not open");
+        require(_newEndTime > election.endTime, "New end time must be greater than the current end time");
+
+        election.endTime = _newEndTime;
+        emit ElectionTimeExtended(_electionId, _newEndTime);
+    }
+
     function vote(uint256 _electionId, string memory _positionName, uint256 _candidateId) public nonReentrant validElection(_electionId) validPosition(_electionId, _positionName) {
         Election storage election = elections[_electionId];
         require(election.isOpen, "Election is not open for voting");
@@ -233,6 +314,7 @@ contract Voting is Ownable, ReentrancyGuard {
 
         Position storage position = election.positions[_positionName];
         require(isValidCandidate(position.candidateIds, _candidateId), "Invalid candidate");
+        require(candidatesByElection[_electionId][_candidateId].approved, "Candidate is not approved");
 
         voters[msg.sender].voted = true;
         candidatesByElection[_electionId][_candidateId].voteCount++;
@@ -320,30 +402,29 @@ contract Voting is Ownable, ReentrancyGuard {
     }
 
     function isVoterPending(address _voterAddress) internal view returns (bool) {
-        for (uint256 i = 0; i < pendingVoters.length; i++) {
-            if (pendingVoters[i] == _voterAddress) {
-                return true;
-            }
+for (uint256 i = 0; i < pendingVoters.length; i++) {
+if (pendingVoters[i] == _voterAddress) {
+return true;
+}
+}
+return false;
+}
+function removePendingVoter(address _voterAddress) internal {
+    for (uint256 i = 0; i < pendingVoters.length; i++) {
+        if (pendingVoters[i] == _voterAddress) {
+            pendingVoters[i] = pendingVoters[pendingVoters.length - 1];
+            pendingVoters.pop();
+            break;
         }
-        return false;
     }
+}
 
-    function removePendingVoter(address _voterAddress) internal {
-        for (uint256 i = 0; i < pendingVoters.length; i++) {
-            if (pendingVoters[i] == _voterAddress) {
-                pendingVoters[i] = pendingVoters[pendingVoters.length - 1];
-                pendingVoters.pop();
-                break;
-            }
+function isValidCandidate(uint256[] memory _candidateIds, uint256 _candidateId) internal pure returns (bool) {
+    for (uint256 i = 0; i < _candidateIds.length; i++) {
+        if (_candidateIds[i] == _candidateId) {
+            return true;
         }
     }
-
-    function isValidCandidate(uint256[] memory _candidateIds, uint256 _candidateId) internal pure returns (bool) {
-        for (uint256 i = 0; i < _candidateIds.length; i++) {
-            if (_candidateIds[i] == _candidateId) {
-                return true;
-            }
-        }
-        return false;
-    }
+    return false;
+}
 }

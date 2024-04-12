@@ -83,7 +83,7 @@ const Login = () => {
       </p>
       <div className="button-container">
         <button onClick={handleLogin} className="login-button">
-          {isConnected ? 'Connected' : 'Log in with MetaMask'}
+          {isConnected ? 'Connected' : 'Connect wallet'}
         </button>
         {isConnected && (
           <div className="account-info">
@@ -112,6 +112,7 @@ const Login = () => {
       <p>
         Not registered?{' '}
         <Link to="/VoterRegistrationForm">Go to Registration page</Link>
+       
       </p>
     </div>
   );

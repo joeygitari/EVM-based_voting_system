@@ -1,37 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import VotingService from './VotingService';
-import './Elections.css';
+import {
+  Button,
+  TextField,
+  Typography,
+  Box,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemText,
+  Grid,
+  CircularProgress,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const ElectionCreationForm = () => {
   const [electionName, setElectionName] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [positionName, setPositionName] = useState('');
-  const [candidates, setCandidates] = useState('');
   const [selectedElection, setSelectedElection] = useState(null);
   const [elections, setElections] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchElections = async () => {
       try {
+        setLoading(true);
         const electionCount = await VotingService.getElectionCount();
         const electionDetails = [];
-        
+
         for (let i = 1; i <= electionCount; i++) {
           const details = await VotingService.getElection(i);
           electionDetails.push({
-            name: details[0],
-            isOpen: details[1],
-            startTime: details[2],
-            endTime: details[3],
-            positionNames: details[4] || [],
+            id: i,
+            name: details.name,
+            isOpen: details.isOpen,
+            startTime: details.startTime,
+            endTime: details.endTime,
+            positionNames: details.positionNames || [],
             isExpanded: false,
           });
         }
 
         setElections(electionDetails);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching elections:', error);
+        setLoading(false);
       }
     };
 
@@ -42,10 +60,7 @@ const ElectionCreationForm = () => {
     try {
       const startTimeTimestamp = Math.floor(new Date(startTime).getTime() / 1000);
       const endTimeTimestamp = Math.floor(new Date(endTime).getTime() / 1000);
-  
-      // Log the startTime value
-      console.log("Start time:", startTimeTimestamp);
-  
+
       await VotingService.createElection(
         electionName,
         startTimeTimestamp,
@@ -55,59 +70,29 @@ const ElectionCreationForm = () => {
       setElectionName('');
       setStartTime('');
       setEndTime('');
-      const newElection = {
-        name: electionName,
-        startTime: startTimeTimestamp,
-        endTime: endTimeTimestamp,
-        isOpen: false,
-        positionNames: [],
-        isExpanded: false,
-      };
+      const electionCount = await VotingService.getElectionCount();
+      const newElection = await VotingService.getElection(electionCount);
       setElections([...elections, newElection]);
     } catch (error) {
       console.error('Error creating election:', error);
     }
   };
 
-  const handleCreatePosition = async () => {
+  const handleCreatePosition = async (electionId) => {
     try {
-      await VotingService.createPosition(elections.indexOf(selectedElection) + 1, positionName);
+      await VotingService.createPosition(electionId, positionName);
       console.log('Position created:', positionName);
-      setSelectedElection({
-        ...selectedElection,
-        positionNames: [...(selectedElection.positionNames || []), positionName],
-      });
+      const updatedElection = await VotingService.getElection(electionId);
+      setSelectedElection(updatedElection);
       setPositionName('');
     } catch (error) {
       console.error('Error creating position:', error);
     }
   };
 
-  const handleAddCandidates = async () => {
-    try {
-      const candidateNames = candidates.split(',').map((name) => name.trim());
-      if (candidateNames.length < 2) {
-        console.error('At least two candidates are required');
-        return;
-      }
-  
-      if (!selectedElection) {
-        console.error('No election selected');
-        return;
-      }
-  
-      const electionId = elections.indexOf(selectedElection) + 1;
-  
-      await VotingService.addCandidates(electionId, positionName, candidateNames);
-      console.log('Candidates added:', candidateNames);
-      setCandidates('');
-    } catch (error) {
-      console.error('Error adding candidates:', error);
-    }
-  };
   const handleToggleElection = async (election) => {
     const updatedElections = elections.map((e) => {
-      if (e === election) {
+      if (e.id === election.id) {
         return { ...e, isExpanded: !e.isExpanded };
       }
       return e;
@@ -116,15 +101,8 @@ const ElectionCreationForm = () => {
 
     if (!election.isExpanded) {
       try {
-        const details = await VotingService.getElection(elections.indexOf(election) + 1);
-        setSelectedElection({
-          ...election,
-          name: details[0],
-          isOpen: details[1],
-          startTime: details[2],
-          endTime: details[3],
-          positionNames: details[4] || [],
-        });
+        const electionDetails = await VotingService.getElection(election.id);
+        setSelectedElection(electionDetails);
       } catch (error) {
         console.error('Error fetching election details:', error);
       }
@@ -134,79 +112,125 @@ const ElectionCreationForm = () => {
   };
 
   return (
-    <div className="election-creation-form">
-      <h2>Create Election</h2>
-      <input
-        type="text"
-        placeholder="Election Name"
-        value={electionName}
-        onChange={(e) => setElectionName(e.target.value)}
-      />
-      <input
-        type="datetime-local"
-        placeholder="Start Time"
-        value={startTime}
-        onChange={(e) => setStartTime(e.target.value)}
-      />
-      <input
-        type="datetime-local"
-        placeholder="End Time"
-        value={endTime}
-        onChange={(e) => setEndTime(e.target.value)}
-      />
-      <button onClick={handleCreateElection}>Create Election</button>
+    <Box sx={{ maxWidth: 800, margin: 'auto', padding: 2 }}>
+      <Typography variant="h4" gutterBottom>
+        Create Election
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            label="Election Name"
+            fullWidth
+            value={electionName}
+            onChange={(e) => setElectionName(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Start Time"
+            type="datetime-local"
+            fullWidth
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="End Time"
+            type="datetime-local"
+            fullWidth
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Button variant="contained" onClick={handleCreateElection}>
+            Create Election
+          </Button>
+        </Grid>
+      </Grid>
 
-      <h2>Created Elections</h2>
-      {elections.map((election, index) => (
-        <div key={index} className="election-card">
-          <div className="election-header" onClick={() => handleToggleElection(election)}>
-            <h3>{election.name}</h3>
-            <span className={`arrow ${election.isExpanded ? 'up' : 'down'}`}></span>
-          </div>
-          {election.isExpanded && (
-            <div className="election-details">
-              <p>Start Time: {new Date(Number(election.startTime.toString()) * 1000).toLocaleString()}</p>
-              <p>End Time: {new Date(Number(election.endTime.toString()) * 1000).toLocaleString()}</p>
-              <p>Status: {election.isOpen ? 'Open' : 'Closed'}</p>
+      <Typography variant="h5" gutterBottom sx={{ marginTop: 4 }}>
+        Created Elections
+      </Typography>
+      {loading ? (
+        <CircularProgress />
+      ) : (
+        elections.map((election) => (
+          <Accordion
+            key={election.id}
+            expanded={election.isExpanded}
+            onChange={() => handleToggleElection(election)}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>{election.name}</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="Start Time"
+                    secondary={new Date(Number(election.startTime) * 1000).toLocaleString()}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary="End Time"
+                    secondary={new Date(Number(election.endTime) * 1000).toLocaleString()}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary="Status"
+                    secondary={election.isOpen ? 'Open' : 'Closed'}
+                  />
+                </ListItem>
+              </List>
 
-              <h4>Create Position</h4>
-              <input
-                type="text"
-                placeholder="Position Name"
-                value={positionName}
-                onChange={(e) => setPositionName(e.target.value)}
-              />
-              <button onClick={handleCreatePosition}>Create Position</button>
+              <Typography variant="h6" gutterBottom>
+                Create Position
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Position Name"
+                    fullWidth
+                    value={positionName}
+                    onChange={(e) => setPositionName(e.target.value)}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleCreatePosition(election.id)}
+                  >
+                    Create Position
+                  </Button>
+                </Grid>
+              </Grid>
 
-              <h4>Positions</h4>
-              <ul>
-                {election.positionNames.map((position, index) => (
-                  <li key={index}>{position}</li>
-                ))}
-              </ul>
-
-              <h4>Add Candidates</h4>
-              <select value={positionName} onChange={(e) => setPositionName(e.target.value)}>
-                <option value="">Select Position</option>
+              <Typography variant="h6" gutterBottom sx={{ marginTop: 2 }}>
+                Positions
+              </Typography>
+              <List>
                 {selectedElection &&
                   selectedElection.positionNames.map((position, index) => (
-                    <option key={index} value={position}>
-                      {position}
-                    </option>
+                    <ListItem key={index}>
+                      <ListItemText primary={position} />
+                    </ListItem>
                   ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Candidate Names (comma-separated)"
-                value={candidates}
-                onChange={(e) => setCandidates(e.target.value)}
-              />
-              <button onClick={handleAddCandidates}>Add Candidates</button>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+              </List>
+            </AccordionDetails>
+          </Accordion>
+        ))
+      )}
+    </Box>
   );
 };
 

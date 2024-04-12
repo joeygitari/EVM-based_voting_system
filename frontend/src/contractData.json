@@ -1,5 +1,5 @@
 {
-  "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "abi": [
     {
       "inputs": [],
@@ -50,12 +50,62 @@
         },
         {
           "indexed": false,
-          "internalType": "string[]",
-          "name": "candidateNames",
-          "type": "string[]"
+          "internalType": "string",
+          "name": "candidateName",
+          "type": "string"
         }
       ],
-      "name": "CandidatesAdded",
+      "name": "CandidateApproved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "electionId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "positionName",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "candidateName",
+          "type": "string"
+        }
+      ],
+      "name": "CandidateRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "electionId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "positionName",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "candidateName",
+          "type": "string"
+        }
+      ],
+      "name": "CandidateRejected",
       "type": "event"
     },
     {
@@ -113,6 +163,25 @@
       "anonymous": false,
       "inputs": [],
       "name": "ElectionStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "electionId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newEndTime",
+          "type": "uint256"
+        }
+      ],
+      "name": "ElectionTimeExtended",
       "type": "event"
     },
     {
@@ -260,12 +329,12 @@
           "type": "string"
         },
         {
-          "internalType": "string[]",
-          "name": "_candidateNames",
-          "type": "string[]"
+          "internalType": "uint256",
+          "name": "_candidateId",
+          "type": "uint256"
         }
       ],
-      "name": "addCandidates",
+      "name": "approveCandidate",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -459,6 +528,24 @@
       "inputs": [
         {
           "internalType": "uint256",
+          "name": "_electionId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_newEndTime",
+          "type": "uint256"
+        }
+      ],
+      "name": "extendElectionTime",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
           "name": "index",
           "type": "uint256"
         }
@@ -597,6 +684,40 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_electionId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_positionName",
+          "type": "string"
+        }
+      ],
+      "name": "getRegisteredCandidates",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "",
+          "type": "string[]"
+        },
+        {
+          "internalType": "bool[]",
+          "name": "",
+          "type": "bool[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "_voterAddress",
           "type": "address"
@@ -715,6 +836,29 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_electionId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_positionName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_candidateName",
+          "type": "string"
+        }
+      ],
+      "name": "registerCandidate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "string",
           "name": "_firstName",
           "type": "string"
@@ -746,6 +890,29 @@
         }
       ],
       "name": "registerVoter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_electionId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_positionName",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_candidateId",
+          "type": "uint256"
+        }
+      ],
+      "name": "rejectCandidate",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
