@@ -259,22 +259,24 @@ class VotingService {
 
   async getCandidates(electionId, positionName) {
     try {
-      const election = await this.getElection(electionId);
-      if (!election) {
-        throw new Error(`Election with ID ${electionId} not found`);
-      }
-
-      const candidateIds = await this.callContractMethod('getCandidateIds', electionId, positionName);
-      const candidates = await Promise.all(
-        candidateIds.map(async (candidateId) => {
-          const candidate = await this.getCandidate(electionId, candidateId);
-          return candidate;
-        })
-      );
-
-      return candidates;
+      const [candidateIds, candidateNames, candidateApprovals] = await this.callContractMethod('getRegisteredCandidates', electionId, positionName);
+      const candidates = candidateIds.map((id, index) => ({
+        id: id.toString(),
+        name: candidateNames[index],
+        approved: candidateApprovals[index],
+      }));
+      return candidates.filter((candidate) => candidate.approved);
     } catch (error) {
-      console.error('Error getting candidates:', error);
+      console.error('Error calling getRegisteredCandidates:', error);
+      throw error;
+    }
+  }
+  async getPositionNames(electionId) {
+    try {
+      const election = await this.getElection(electionId);
+      return election.positionNames;
+    } catch (error) {
+      console.error('Error getting position names:', error);
       throw error;
     }
   }
