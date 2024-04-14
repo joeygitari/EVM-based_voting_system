@@ -56,6 +56,8 @@ const Title = styled(Typography)(({ theme }) => ({
   color: theme.palette.primary.dark,
   textAlign: 'center',
   textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
+  fontSize: '24px', // Customize the font size
+  fontWeight: 'bold', // Customize the font weight
 }));
 
 const WelcomeMessage = styled(Typography)(({ theme }) => ({
@@ -268,7 +270,7 @@ const Login = () => {
       <LoginContainer maxWidth="sm">
         <Grow in timeout={1000}>
           <Title variant={isMobile ? 'h4' : 'h2'}>
-            Welcome to the Voting DApp
+           LOGIN FORM
           </Title>
         </Grow>
         <Fade in timeout={1500}>
