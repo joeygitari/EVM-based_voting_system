@@ -200,6 +200,15 @@ class VotingService {
   async getApprovedVoters(index) {
     return this.callContractMethod('getApprovedVoters', index);
   }
+  async isApprovedVoter(voterAddress) {
+    try {
+      const approvedVoters = await this.callContractMethod('getApprovedVoters');
+      return approvedVoters.includes(voterAddress);
+    } catch (error) {
+      console.error('Error checking approved voter:', error);
+      throw error;
+    }
+  }
 
   async getElection(electionId) {
     try {
