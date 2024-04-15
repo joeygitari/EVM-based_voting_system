@@ -37,7 +37,7 @@ const BackgroundContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  background: 'linear-gradient(45deg, #2c3e50 0%, #3498db 100%)',
+  background: 'linear-gradient(45deg, #f5f7fa 0%, #c3cfe2 100%)',
 }));
 
 const LoginContainer = styled(Container)(({ theme }) => ({

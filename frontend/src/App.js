@@ -17,16 +17,16 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/registration" element={<VoterRegistrationForm />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/candidate-form" element={<CandidateForm />} />
-        <Route path="/election-details" element={<ElectionDetails />} />
-        <Route path="/candidate-approval" element={<CandidateApproval />} />
-        <Route path="/pending-voters" element={<PendingVotersPage />} />
-        <Route path="/approved-voters" element={<ApprovedVoters />} />
-        <Route path="/elections" element={<Elections />} />
-        <Route path="/rejected-voters" element={<RejectedVoters />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/VoterRegistrationForm" element={<VoterRegistrationForm />} />
+        <Route path="/Login" element={<Login />} />
+        <Route path="/CandidateForm" element={<CandidateForm />} />
+        <Route path="/ElectionDetails" element={<ElectionDetails />} />
+        <Route path="/CandidateApproval" element={<CandidateApproval />} />
+        <Route path="/PendingVotersPag" element={<PendingVotersPage />} />
+        <Route path="/ApprovedVoters" element={<ApprovedVoters />} />
+        <Route path="/Elections" element={<Elections />} />
+        <Route path="/RejectedVoters" element={<RejectedVoters />} />
+        <Route path="/AdminPage" element={<AdminPage />} />
       </Routes>
     </Router>
   );

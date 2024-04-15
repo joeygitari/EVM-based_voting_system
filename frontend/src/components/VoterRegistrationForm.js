@@ -29,7 +29,7 @@ const BackgroundContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  background: 'linear-gradient(45deg, #2c3e50 0%, #3498db 100%)',
+  background: 'linear-gradient(45deg, #f5f7fa 0%, #c3cfe2 100%)',
 }));
 
 const RegistrationContainer = styled(Paper)(({ theme }) => ({
@@ -211,9 +211,9 @@ const VoterRegistrationForm = () => {
               color="primary"
               size="large"
               onClick={connectToMetamask}
-              startIcon={<img src="/metamask-icon.png" alt="Metamask" width={24} />}
+              startIcon={<img src="/metamask-icon2.webp" alt="Metamask" width={24} />}
             >
-              Connect to Metamask
+              Connect Wallet
             </Button>
           </Box>
         ) : (
@@ -233,7 +233,7 @@ const VoterRegistrationForm = () => {
                 </Alert>
               ) : (
                 <Alert severity="warning" sx={{ marginTop: theme.spacing(1) }}>
-                  You are not registered, please register in the form below.
+                  You are not registered, please register with this form.
                 </Alert>
               )}
             </Box>
