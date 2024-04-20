@@ -96,8 +96,20 @@ const ElectionResult = () => {
   const fetchElectionResult = async (electionId, positionName) => {
     try {
       const result = await VotingService.getElectionResult(electionId, positionName);
+      const candidateNames = await Promise.all(
+        result.candidateIds.map((candidateId) =>
+          VotingService.getCandidate(electionId, candidateId).then((candidate) => candidate.name)
+        )
+      );
+      const winners = await getWinner(result.candidateIds, result.voteCounts);
       setSelectedElection({ id: electionId, name: elections.find((e) => e.id === electionId).name });
-      setSelectedPosition({ name: result.positionName, candidateIds: result.candidateIds, voteCounts: result.voteCounts });
+      setSelectedPosition({
+        name: result.positionName,
+        candidateIds: result.candidateIds,
+        candidateNames,
+        voteCounts: result.voteCounts,
+        winners,
+      });
     } catch (error) {
       console.error('Error fetching election result:', error);
     }
@@ -106,23 +118,21 @@ const ElectionResult = () => {
   const getChartData = () => {
     if (!selectedPosition) return null;
 
-    const candidateNames = selectedPosition.candidateIds.map((candidateId) =>
-      VotingService.getCandidate(selectedElection.id, candidateId).then((candidate) => candidate.name)
-    );
+    const backgroundColors = selectedPosition.candidateNames.map((_, index) => {
+      if (index === 0) return theme.palette.primary.main;
+      if (index === 1) return theme.palette.secondary.main;
+      return theme.palette.grey[300];
+    });
 
-    return Promise.all(candidateNames).then((names) => ({
-      labels: names,
+    return {
+      labels: selectedPosition.candidateNames,
       datasets: [
         {
           data: selectedPosition.voteCounts,
-          backgroundColor: [
-            theme.palette.primary.main,
-            theme.palette.secondary.main,
-            ...Array(names.length - 2).fill(theme.palette.grey[300]),
-          ],
+          backgroundColor: backgroundColors,
         },
       ],
-    }));
+    };
   };
 
   const getTotalVotes = () => {
@@ -130,12 +140,10 @@ const ElectionResult = () => {
     return selectedPosition.voteCounts.reduce((sum, count) => sum + count, 0);
   };
 
-  const getWinner = () => {
-    if (!selectedPosition) return null;
-    const maxVotes = Math.max(...selectedPosition.voteCounts);
-    const winnerIds = selectedPosition.candidateIds.filter(
-      (_, index) => selectedPosition.voteCounts[index] === maxVotes
-    );
+  const getWinner = (candidateIds, voteCounts) => {
+    if (!candidateIds || !voteCounts) return null;
+    const maxVotes = Math.max(...voteCounts);
+    const winnerIds = candidateIds.filter((_, index) => voteCounts[index] === maxVotes);
     return Promise.all(winnerIds.map((candidateId) => VotingService.getCandidate(selectedElection.id, candidateId)));
   };
 
@@ -160,7 +168,7 @@ const ElectionResult = () => {
             </IconButton>
           </Tooltip>
           <Tooltip title="Elections">
-            <IconButton href="/ElectionDetails">
+            <IconButton href="/elections">
               <HowToVoteIcon />
             </IconButton>
           </Tooltip>
@@ -213,7 +221,7 @@ const ElectionResult = () => {
                     {selectedPosition.candidateIds.map((candidateId, index) => (
                       <TableRow key={candidateId}>
                         <TableCell component="th" scope="row">
-                          {VotingService.getCandidate(selectedElection.id, candidateId).then((candidate) => candidate.name)}
+                          {selectedPosition.candidateNames[index]}
                         </TableCell>
                         <TableCell align="right">{selectedPosition.voteCounts[index]}</TableCell>
                         <TableCell align="right">
@@ -230,25 +238,21 @@ const ElectionResult = () => {
               <Box mt={2}>
                 <Typography variant="h6">
                   Winner:{' '}
-                  {getWinner().then((winners) =>
-                    winners.map((winner) => (
-                      <Chip
-                        key={winner.id}
-                        avatar={<Avatar>{winner.name[0]}</Avatar>}
-                        label={winner.name}
-                        sx={{ m: 0.5 }}
-                      />
-                    ))
-                  )}
+                  {selectedPosition.winners?.map((winner) => (
+                    <Chip
+                      key={winner.id}
+                      avatar={<Avatar>{winner.name[0]}</Avatar>}
+                      label={winner.name}
+                      sx={{ m: 0.5 }}
+                    />
+                  ))}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} md={6}>
-              {getChartData().then((chartData) => (
-                <Box height="100%" position="relative">
-                  <Pie data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-                </Box>
-              ))}
+              <Box height="100%" position="relative">
+                <Pie data={getChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+              </Box>
             </Grid>
           </Grid>
           <Divider sx={{ my: 4 }} />
@@ -257,22 +261,18 @@ const ElectionResult = () => {
           </Typography>
           {selectedPosition.candidateIds.map((candidateId, index) => (
             <Box key={candidateId} mb={2}>
-              {VotingService.getCandidate(selectedElection.id, candidateId).then((candidate) => (
-                <React.Fragment>
-                  <Typography variant="body1">{candidate.name}</Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(selectedPosition.voteCounts[index] / getTotalVotes()) * 100}
-                    sx={{ height: 10, borderRadius: 5 }}
-                  />
-                  <Box display="flex" justifyContent="space-between" mt={1}>
-                    <Typography variant="body2">Votes: {selectedPosition.voteCounts[index]}</Typography>
-                    <Typography variant="body2">
-                      Percentage: {((selectedPosition.voteCounts[index] / getTotalVotes()) * 100).toFixed(2)}%
-                    </Typography>
-                  </Box>
-                </React.Fragment>
-              ))}
+              <Typography variant="body1">{selectedPosition.candidateNames[index]}</Typography>
+              <LinearProgress
+                variant="determinate"
+                value={(selectedPosition.voteCounts[index] / getTotalVotes()) * 100}
+                sx={{ height: 10, borderRadius: 5 }}
+              />
+              <Box display="flex" justifyContent="space-between" mt={1}>
+                <Typography variant="body2">Votes: {selectedPosition.voteCounts[index]}</Typography>
+                <Typography variant="body2">
+                  Percentage: {((selectedPosition.voteCounts[index] / getTotalVotes()) * 100).toFixed(2)}%
+                </Typography>
+              </Box>
             </Box>
           ))}
         </Box>
