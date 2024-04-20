@@ -13,6 +13,7 @@ import ElectionDetails from './components/ElectionDetails';
 import HomePage from './components/HomePage';
 import Events from './components/Events';
 import Results from './components/Results';
+import VoterEducation from './components/VoterEducation';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/AdminPage" element={<AdminPage />} />
         <Route path="/Events" element={<Events />} />
         <Route path="/Results" element={<Results />} />
+        <Route path="/VoterEducation" element={<VoterEducation />} />
       </Routes>
     </Router>
   );

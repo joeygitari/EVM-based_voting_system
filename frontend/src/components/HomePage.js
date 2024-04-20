@@ -63,6 +63,22 @@ const CustomButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+const LearnMoreButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  backgroundColor: theme.palette.info.main,
+  color: theme.palette.common.white,
+  fontSize: '1.2rem',
+  fontWeight: 'bold',
+  padding: theme.spacing(1.5, 3),
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[4],
+  transition: 'transform 0.3s',
+  '&:hover': {
+    backgroundColor: theme.palette.info.dark,
+    transform: 'scale(1.05)',
+  },
+}));
+
 const HomePage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -73,13 +89,11 @@ const HomePage = () => {
         <BlueText>DECENTRALIZED</BlueText> STUDENTS e-VOTING SYSTEM WITH{' '}
         <BlueText>BLOCKCHAIN</BlueText>
       </TitleText>
+      <LearnMoreButton component={Link} to="/VoterEducation" variant="contained">
+        Learn About the System
+      </LearnMoreButton>
       <ButtonContainer>
-        <CustomButton
-          component={Link}
-          to="/registration"
-          variant="contained"
-          color="primary"
-        >
+        <CustomButton component={Link} to="/registration" variant="contained" color="primary">
           Register
         </CustomButton>
         <CustomButton component={Link} to="/login" variant="contained" color="secondary">
