@@ -21,6 +21,7 @@ import {
   HowToReg,
   Person,
   ExitToApp,
+  Event,
 } from '@mui/icons-material';
 
 const AdminContainer = styled(Box)(({ theme }) => ({
@@ -204,11 +205,19 @@ const AdminPage = () => {
           </AdminNavLink>
         </DropdownContent>
         <AdminNavItem>
-          <AdminNavLink to="/admin/results">
+          <AdminNavLink to="/Results">
             <ListItemIcon>
               <HowToVote />
             </ListItemIcon>
             <ListItemText primary="Results" />
+          </AdminNavLink>
+        </AdminNavItem>
+        <AdminNavItem>
+          <AdminNavLink to="/Events">
+            <ListItemIcon>
+              <Event />
+            </ListItemIcon>
+            <ListItemText primary="Events" />
           </AdminNavLink>
         </AdminNavItem>
         <AdminNavItem>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import VotingService from './VotingService';
 import {
   Typography,
@@ -24,10 +25,19 @@ import {
   Radio,
   FormControlLabel,
   LinearProgress,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
-import { AccessTime, HowToVote } from '@mui/icons-material';
+import {
+  AccessTime,
+  HowToVote,
+  Home as HomeIcon,
+  Event as EventIcon,
+  HowToReg as HowToRegIcon,
+} from '@mui/icons-material';
 
 const ElectionDetails = () => {
+  const navigate = useNavigate();
   const [elections, setElections] = useState([]);
   const [selectedElectionId, setSelectedElectionId] = useState(null);
   const [election, setElection] = useState(null);
@@ -40,6 +50,7 @@ const ElectionDetails = () => {
   const [electionStatus, setElectionStatus] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const electionRef = useRef(null);
 
   useEffect(() => {
     const fetchElections = async () => {
@@ -81,6 +92,7 @@ const ElectionDetails = () => {
         );
 
         setElection(electionDetails);
+        electionRef.current = electionDetails;
         setPositions(positionNames);
         setCandidates(
           candidatesData.reduce((obj, { positionName, candidates }) => {
@@ -97,13 +109,16 @@ const ElectionDetails = () => {
     };
 
     const startCountdown = () => {
-      if (!election) return;
+      if (!electionRef.current) return;
 
       const currentTime = Math.floor(Date.now() / 1000);
-      const startTime = Number(election.startTime);
-      const endTime = Number(election.endTime);
+      const startTime = Number(electionRef.current.startTime);
+      const endTime = Number(electionRef.current.endTime);
 
-      if (currentTime < startTime) {
+      if (electionRef.current.isOpen) {
+        setElectionStatus('Ongoing');
+        setCountdownTime(endTime - currentTime);
+      } else if (currentTime < startTime) {
         setElectionStatus('Upcoming');
         setCountdownTime(startTime - currentTime);
       } else if (currentTime >= startTime && currentTime < endTime) {
@@ -111,7 +126,7 @@ const ElectionDetails = () => {
         setCountdownTime(endTime - currentTime);
       } else {
         setElectionStatus('Ended');
-        setCountdownTime(null);
+        setCountdownTime(0);
       }
     };
 
@@ -143,7 +158,7 @@ const ElectionDetails = () => {
         )
       );
       setSelectedCandidates({});
-      alert('Vote cast successfully!');
+      setError('Vote cast successfully!');
     } catch (error) {
       console.error('Error casting vote:', error);
       setError('Failed to cast vote. Please try again.');
@@ -158,6 +173,10 @@ const ElectionDetails = () => {
   };
 
   const formatTime = (time) => {
+    if (time <= 0) {
+      return 'Ended';
+    }
+
     const days = Math.floor(time / (24 * 60 * 60));
     const hours = Math.floor((time % (24 * 60 * 60)) / (60 * 60));
     const minutes = Math.floor((time % (60 * 60)) / 60);
@@ -185,17 +204,40 @@ const ElectionDetails = () => {
   }
 
   return (
-    <Box py={4}>
+    <Box
+      py={4}
+      sx={{
+        background: 'linear-gradient(45deg, #f5f7fa 0%, #c3cfe2 100%)',
+        minHeight: '100vh',
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom>
+          {election.name}
+        </Typography>
+        <Box>
+          <Tooltip title="Home">
+            <IconButton onClick={() => navigate('/')}>
+              <HomeIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Election results">
+            <IconButton onClick={() => navigate('/Results')}>
+              <HowToRegIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Events">
+            <IconButton onClick={() => navigate('/Events')}>
+              <EventIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
       <Grid container spacing={4} justifyContent="center">
         <Grid item xs={12} md={8}>
           <Card elevation={3}>
             <CardContent>
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={6}>
-                  <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom>
-                    {election.name}
-                  </Typography>
-                </Grid>
                 <Grid item xs={12} sm={6}>
                   <FormControl variant="outlined" fullWidth>
                     <InputLabel>Select Election</InputLabel>
@@ -252,7 +294,13 @@ const ElectionDetails = () => {
               )}
             </CardContent>
             <CardActions>
-              <Button variant="contained" color="primary" startIcon={<HowToVote />} fullWidth disabled={electionStatus !== 'Ongoing'}>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<HowToVote />}
+                fullWidth
+                disabled={electionStatus !== 'Ongoing'}
+              >
                 {electionStatus === 'Ongoing' ? 'Vote Now' : `Voting ${electionStatus === 'Upcoming' ? 'starts' : 'ended'} on ${new Date(electionStatus === 'Upcoming' ? Number(election.startTime) * 1000 : Number(election.endTime) * 1000).toLocaleString()}`}
               </Button>
             </CardActions>
@@ -304,7 +352,7 @@ const ElectionDetails = () => {
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={handleSnackbarClose} severity="error" elevation={6} variant="filled">
+        <Alert onClose={handleSnackbarClose} severity={error?.includes('success') ? 'success' : 'error'} elevation={6} variant="filled">
           {error}
         </Alert>
       </Snackbar>

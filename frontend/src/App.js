@@ -11,6 +11,8 @@ import CandidateForm from './components/CandidateForm';
 import CandidateApproval from './components/CandidateApproval';
 import ElectionDetails from './components/ElectionDetails';
 import HomePage from './components/HomePage';
+import Events from './components/Events';
+import Results from './components/Results';
 
 function App() {
   return (
@@ -22,11 +24,13 @@ function App() {
         <Route path="/CandidateForm" element={<CandidateForm />} />
         <Route path="/ElectionDetails" element={<ElectionDetails />} />
         <Route path="/CandidateApproval" element={<CandidateApproval />} />
-        <Route path="/PendingVotersPag" element={<PendingVotersPage />} />
+        <Route path="/PendingVotersPage" element={<PendingVotersPage />} />
         <Route path="/ApprovedVoters" element={<ApprovedVoters />} />
         <Route path="/Elections" element={<Elections />} />
         <Route path="/RejectedVoters" element={<RejectedVoters />} />
         <Route path="/AdminPage" element={<AdminPage />} />
+        <Route path="/Events" element={<Events />} />
+        <Route path="/Results" element={<Results />} />
       </Routes>
     </Router>
   );
