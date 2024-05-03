@@ -229,7 +229,7 @@ const VoterRegistrationForm = () => {
                 <Alert severity="info" sx={{ marginTop: theme.spacing(1) }}>
                   Your registration is pending approval. 
                   Please wait for the election admin to review your registration.
-                  Keep an eye on this page to check your satus.
+                  Keep an eye on this page to check your status.
                 </Alert>
               ) : (
                 <Alert severity="warning" sx={{ marginTop: theme.spacing(1) }}>
