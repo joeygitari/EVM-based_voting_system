@@ -78,6 +78,12 @@
           "internalType": "string",
           "name": "candidateName",
           "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "candidateAddress",
+          "type": "address"
         }
       ],
       "name": "CandidateRegistered",
@@ -116,19 +122,6 @@
           "internalType": "uint256",
           "name": "electionId",
           "type": "uint256"
-        }
-      ],
-      "name": "ElectionClosed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "electionId",
-          "type": "uint256"
         },
         {
           "indexed": false,
@@ -138,31 +131,6 @@
         }
       ],
       "name": "ElectionCreated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [],
-      "name": "ElectionEnded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "electionId",
-          "type": "uint256"
-        }
-      ],
-      "name": "ElectionOpened",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [],
-      "name": "ElectionStarted",
       "type": "event"
     },
     {
@@ -393,19 +361,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_electionId",
-          "type": "uint256"
-        }
-      ],
-      "name": "closeElection",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "string",
           "name": "_name",
           "type": "string"
@@ -458,32 +413,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "electionEnded",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "electionStarted",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -499,11 +428,6 @@
           "type": "string"
         },
         {
-          "internalType": "bool",
-          "name": "isOpen",
-          "type": "bool"
-        },
-        {
           "internalType": "uint256",
           "name": "startTime",
           "type": "uint256"
@@ -515,13 +439,6 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "endElection",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -577,11 +494,6 @@
           "type": "string"
         },
         {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        },
-        {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
@@ -629,6 +541,11 @@
           "internalType": "uint256[]",
           "name": "",
           "type": "uint256[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "stateMutability": "view",
@@ -663,6 +580,11 @@
           "internalType": "uint256[]",
           "name": "",
           "type": "uint256[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "stateMutability": "view",
@@ -786,19 +708,6 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_electionId",
-          "type": "uint256"
-        }
-      ],
-      "name": "openElection",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -940,13 +849,6 @@
     {
       "inputs": [],
       "name": "resetRegisteredAddresses",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "startElection",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

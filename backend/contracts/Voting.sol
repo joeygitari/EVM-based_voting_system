@@ -21,6 +21,7 @@ contract Voting is Ownable, ReentrancyGuard {
         string name;
         uint256 voteCount;
         bool approved;
+        address addr;
     }
 
     struct Position {
@@ -30,7 +31,6 @@ contract Voting is Ownable, ReentrancyGuard {
 
     struct Election {
         string name;
-        bool isOpen;
         uint256 startTime;
         uint256 endTime;
         mapping(string => Position) positions;
@@ -42,29 +42,41 @@ contract Voting is Ownable, ReentrancyGuard {
     address[] public approvedVoters;
     mapping(uint256 => Election) public elections;
     uint256 public electionCount;
-    mapping(uint256 => mapping(uint256 => Candidate)) private candidatesByElection;
+    mapping(uint256 => mapping(uint256 => Candidate))
+        private candidatesByElection;
     mapping(uint256 => uint256) public candidateCounts;
-    mapping(uint256 => mapping(string => mapping(string => bool))) private candidateNameExists;
+    mapping(uint256 => mapping(string => mapping(string => bool)))
+        private candidateNameExists;
 
     event VoterRegistered(address indexed voterAddress, string email);
     event VoterApproved(address indexed voterAddress, string email);
     event VoterRejected(address indexed voterAddress, string email);
     event ElectionCreated(uint256 indexed electionId, string name);
     event PositionCreated(uint256 indexed electionId, string positionName);
-    event CandidateRegistered(uint256 indexed electionId, string positionName, string candidateName);
-    event CandidateApproved(uint256 indexed electionId, string positionName, string candidateName);
-    event CandidateRejected(uint256 indexed electionId, string positionName, string candidateName);
-    event ElectionOpened(uint256 indexed electionId);
-    event ElectionClosed(uint256 indexed electionId);
-    event VoteCast(uint256 indexed electionId, address indexed voterAddress, string positionName, uint256 indexed candidateId);
+    event CandidateRegistered(
+        uint256 indexed electionId,
+        string positionName,
+        string candidateName,
+        address candidateAddress
+    );
+    event CandidateApproved(
+        uint256 indexed electionId,
+        string positionName,
+        string candidateName
+    );
+    event CandidateRejected(
+        uint256 indexed electionId,
+        string positionName,
+        string candidateName
+    );
+    event VoteCast(
+        uint256 indexed electionId,
+        address indexed voterAddress,
+        string positionName,
+        uint256 indexed candidateId
+    );
     event RegisteredAddressesReset();
-    event ElectionStarted();
-    event ElectionEnded();
     event ElectionTimeExtended(uint256 indexed electionId, uint256 newEndTime);
-
-    bool public electionStarted;
-    bool public electionEnded;
-
     constructor() Ownable(msg.sender) {}
 
     modifier validElection(uint256 _electionId) {
@@ -74,34 +86,29 @@ contract Voting is Ownable, ReentrancyGuard {
 
     modifier validPosition(uint256 _electionId, string memory _positionName) {
         Election storage election = elections[_electionId];
-        require(bytes(election.positions[_positionName].name).length != 0, "Position does not exist");
+        require(
+            bytes(election.positions[_positionName].name).length != 0,
+            "Position does not exist"
+        );
         _;
     }
 
     modifier electionNotStarted(uint256 _electionId) {
         Election storage election = elections[_electionId];
-        require(election.startTime > block.timestamp, "Election has already started");
+        require(
+            block.timestamp < election.startTime,
+            "Election has already started"
+        );
         _;
     }
 
-    function startElection() public onlyOwner {
-        require(!electionStarted, "Election has already started");
-        require(!electionEnded, "Election has already ended");
-
-        electionStarted = true;
-        emit ElectionStarted();
+    modifier notOwner() {
+        require(msg.sender != owner(), "Owner cannot vote");
+        _;
     }
 
     function isOwner(address _address) public view returns (bool) {
         return owner() == _address;
-    }
-
-    function endElection() public onlyOwner {
-        require(electionStarted, "Election has not started yet");
-        require(!electionEnded, "Election has already ended");
-
-        electionEnded = true;
-        emit ElectionEnded();
     }
 
     function registerVoter(
@@ -112,9 +119,18 @@ contract Voting is Ownable, ReentrancyGuard {
         string memory _phoneNumber,
         address _metamaskAddress
     ) public {
-        require(!electionStarted, "Cannot register voters after the election has started");
-        require(!voters[_metamaskAddress].approved, "Voter is already registered and approved");
-        require(!isVoterPending(_metamaskAddress), "Voter is already registered and pending approval");
+        require(
+            block.timestamp < elections[electionCount].startTime,
+            "Cannot register voters after the election has started"
+        );
+        require(
+            !voters[_metamaskAddress].approved,
+            "Voter is already registered and approved"
+        );
+        require(
+            !isVoterPending(_metamaskAddress),
+            "Voter is already registered and pending approval"
+        );
 
         voters[_metamaskAddress] = Voter({
             firstName: _firstName,
@@ -131,7 +147,10 @@ contract Voting is Ownable, ReentrancyGuard {
     }
 
     function approveVoter(address _voterAddress) public onlyOwner {
-        require(isVoterPending(_voterAddress), "Voter is not in the pending list");
+        require(
+            isVoterPending(_voterAddress),
+            "Voter is not in the pending list"
+        );
 
         voters[_voterAddress].approved = true;
         approvedVoters.push(_voterAddress);
@@ -140,7 +159,10 @@ contract Voting is Ownable, ReentrancyGuard {
     }
 
     function rejectVoter(address _voterAddress) public onlyOwner {
-        require(isVoterPending(_voterAddress), "Voter is not in the pending list");
+        require(
+            isVoterPending(_voterAddress),
+            "Voter is not in the pending list"
+        );
 
         string memory email = voters[_voterAddress].email;
         delete voters[_voterAddress];
@@ -149,7 +171,10 @@ contract Voting is Ownable, ReentrancyGuard {
     }
 
     function resetRegisteredAddresses() public onlyOwner {
-        require(!electionStarted, "Cannot reset addresses while an election is in progress");
+        require(
+            block.timestamp < elections[electionCount].startTime,
+            "Cannot reset addresses while an election is in progress"
+        );
 
         for (uint256 i = 0; i < pendingVoters.length; i++) {
             address voterAddress = pendingVoters[i];
@@ -165,61 +190,103 @@ contract Voting is Ownable, ReentrancyGuard {
         emit RegisteredAddressesReset();
     }
 
-    function createElection(string memory _name, uint256 _startTime, uint256 _endTime) public onlyOwner {
+    function createElection(
+        string memory _name,
+        uint256 _startTime,
+        uint256 _endTime
+    ) public onlyOwner {
         require(_startTime < _endTime, "Invalid election start and end time");
 
         electionCount++;
         elections[electionCount].name = _name;
-        elections[electionCount].isOpen = false;
         elections[electionCount].startTime = _startTime;
         elections[electionCount].endTime = _endTime;
 
         emit ElectionCreated(electionCount, _name);
     }
 
-    function createPosition(uint256 _electionId, string memory _positionName) public onlyOwner validElection(_electionId) {
-        require(bytes(_positionName).length > 0, "Position name cannot be empty");
+    function createPosition(
+        uint256 _electionId,
+        string memory _positionName
+    ) public onlyOwner validElection(_electionId) {
+        require(
+            bytes(_positionName).length > 0,
+            "Position name cannot be empty"
+        );
 
         Election storage election = elections[_electionId];
         election.positionNames.push(_positionName);
-        election.positions[_positionName] = Position(_positionName, new uint256[](0));
+        election.positions[_positionName] = Position(
+            _positionName,
+            new uint256[](0)
+        );
 
         emit PositionCreated(_electionId, _positionName);
     }
 
-    function registerCandidate(uint256 _electionId, string memory _positionName, string memory _candidateName)
+    function registerCandidate(
+        uint256 _electionId,
+        string memory _positionName,
+        string memory _candidateName
+    )
         public
         validElection(_electionId)
         validPosition(_electionId, _positionName)
         electionNotStarted(_electionId)
     {
-        require(!candidateNameExists[_electionId][_positionName][_candidateName], "Candidate name already exists");
+        require(
+            !candidateNameExists[_electionId][_positionName][_candidateName],
+            "Candidate name already exists"
+        );
 
         candidateCounts[_electionId]++;
         uint256 candidateId = candidateCounts[_electionId];
-        candidatesByElection[_electionId][candidateId] = Candidate(candidateId, _candidateName, 0, false);
+        candidatesByElection[_electionId][candidateId] = Candidate(
+            candidateId,
+            _candidateName,
+            0,
+            false,
+            msg.sender
+        );
 
         candidateNameExists[_electionId][_positionName][_candidateName] = true;
 
-        emit CandidateRegistered(_electionId, _positionName, _candidateName);
+        emit CandidateRegistered(
+            _electionId,
+            _positionName,
+            _candidateName,
+            msg.sender
+        );
     }
 
-    function approveCandidate(uint256 _electionId, string memory _positionName, uint256 _candidateId)
+    function approveCandidate(
+        uint256 _electionId,
+        string memory _positionName,
+        uint256 _candidateId
+    )
         public
         onlyOwner
         validElection(_electionId)
         validPosition(_electionId, _positionName)
         electionNotStarted(_electionId)
     {
-        Candidate storage candidate = candidatesByElection[_electionId][_candidateId];
+        Candidate storage candidate = candidatesByElection[_electionId][
+            _candidateId
+        ];
         require(!candidate.approved, "Candidate is already approved");
 
         candidate.approved = true;
-        elections[_electionId].positions[_positionName].candidateIds.push(_candidateId);
+        elections[_electionId].positions[_positionName].candidateIds.push(
+            _candidateId
+        );
 
         emit CandidateApproved(_electionId, _positionName, candidate.name);
     }
-    function getRegisteredCandidates(uint256 _electionId, string memory _positionName)
+
+    function getRegisteredCandidates(
+        uint256 _electionId,
+        string memory _positionName
+    )
         public
         view
         validElection(_electionId)
@@ -233,8 +300,12 @@ contract Voting is Ownable, ReentrancyGuard {
 
         uint256 index = 0;
         for (uint256 candidateId = 1; candidateId <= count; candidateId++) {
-            Candidate storage candidate = candidatesByElection[_electionId][candidateId];
-            if (candidateNameExists[_electionId][_positionName][candidate.name]) {
+            Candidate storage candidate = candidatesByElection[_electionId][
+                candidateId
+            ];
+            if (
+                candidateNameExists[_electionId][_positionName][candidate.name]
+            ) {
                 candidateIds[index] = candidateId;
                 candidateNames[index] = candidate.name;
                 candidateApprovals[index] = candidate.approved;
@@ -252,21 +323,29 @@ contract Voting is Ownable, ReentrancyGuard {
         return (candidateIds, candidateNames, candidateApprovals);
     }
 
-    function rejectCandidate(uint256 _electionId, string memory _positionName, uint256 _candidateId)
+    function rejectCandidate(
+        uint256 _electionId,
+        string memory _positionName,
+        uint256 _candidateId
+    )
         public
         onlyOwner
         validElection(_electionId)
         validPosition(_electionId, _positionName)
         electionNotStarted(_electionId)
     {
-        Candidate storage candidate = candidatesByElection[_electionId][_candidateId];
+        Candidate storage candidate = candidatesByElection[_electionId][
+            _candidateId
+        ];
         require(!candidate.approved, "Candidate is already approved");
 
         string memory candidateName = candidate.name;
         delete candidateNameExists[_electionId][_positionName][candidateName];
         delete candidatesByElection[_electionId][_candidateId];
 
-        uint256[] storage candidateIds = elections[_electionId].positions[_positionName].candidateIds;
+        uint256[] storage candidateIds = elections[_electionId]
+            .positions[_positionName]
+            .candidateIds;
         for (uint256 i = 0; i < candidateIds.length; i++) {
             if (candidateIds[i] == _candidateId) {
                 candidateIds[i] = candidateIds[candidateIds.length - 1];
@@ -278,90 +357,157 @@ contract Voting is Ownable, ReentrancyGuard {
         emit CandidateRejected(_electionId, _positionName, candidateName);
     }
 
-    function openElection(uint256 _electionId) public onlyOwner validElection(_electionId) {
+    function extendElectionTime(
+        uint256 _electionId,
+        uint256 _newEndTime
+    ) public onlyOwner validElection(_electionId) {
         Election storage election = elections[_electionId];
-        require(!election.isOpen, "Election is already open");
-        require(election.startTime <= block.timestamp, "Election start time has not reached");
-
-        election.isOpen = true;
-        emit ElectionOpened(_electionId);
-    }
-
-    function closeElection(uint256 _electionId) public onlyOwner validElection(_electionId) {
-        Election storage election = elections[_electionId];
-        require(election.isOpen, "Election is already closed");
-        require(election.endTime <= block.timestamp, "Election end time has not reached");
-
-        election.isOpen = false;
-        emit ElectionClosed(_electionId);
-    }
-
-    function extendElectionTime(uint256 _electionId, uint256 _newEndTime) public onlyOwner validElection(_electionId) {
-        Election storage election = elections[_electionId];
-        require(election.isOpen, "Election is not open");
-        require(_newEndTime > election.endTime, "New end time must be greater than the current end time");
+        require(
+            block.timestamp <= election.endTime,
+            "Election has already ended"
+        );
+        require(
+            _newEndTime > election.endTime,
+            "New end time must be greater than the current end time"
+        );
 
         election.endTime = _newEndTime;
         emit ElectionTimeExtended(_electionId, _newEndTime);
     }
 
-    function vote(uint256 _electionId, string memory _positionName, uint256 _candidateId) public nonReentrant validElection(_electionId) validPosition(_electionId, _positionName) {
+    function vote(
+        uint256 _electionId,
+        string memory _positionName,
+        uint256 _candidateId
+    )
+        public
+        nonReentrant
+        validElection(_electionId)
+        validPosition(_electionId, _positionName)
+        notOwner
+    {
         Election storage election = elections[_electionId];
-        require(election.isOpen, "Election is not open for voting");
+        require(
+            block.timestamp >= election.startTime &&
+                block.timestamp <= election.endTime,
+            "Election is not open for voting"
+        );
         require(voters[msg.sender].approved, "Voter is not approved");
         require(!voters[msg.sender].voted, "Voter has already voted");
-        require(msg.sender == voters[msg.sender].metamaskAddress, "Voter's Metamask address does not match");
+        require(
+            msg.sender == voters[msg.sender].metamaskAddress,
+            "Voter's Metamask address does not match"
+        );
 
         Position storage position = election.positions[_positionName];
-        require(isValidCandidate(position.candidateIds, _candidateId), "Invalid candidate");
-        require(candidatesByElection[_electionId][_candidateId].approved, "Candidate is not approved");
+        require(
+            isValidCandidate(position.candidateIds, _candidateId),
+            "Invalid candidate"
+        );
+        require(
+            candidatesByElection[_electionId][_candidateId].approved,
+            "Candidate is not approved"
+        );
 
         voters[msg.sender].voted = true;
         candidatesByElection[_electionId][_candidateId].voteCount++;
         emit VoteCast(_electionId, msg.sender, _positionName, _candidateId);
     }
 
-    function getElectionResult(uint256 _electionId, string memory _positionName) public view validElection(_electionId) returns (string memory, uint256[] memory, uint256[] memory) {
+    function getElectionResult(
+        uint256 _electionId,
+        string memory _positionName
+    )
+        public
+        view
+        validElection(_electionId)
+        returns (
+            string memory,
+            uint256[] memory,
+            uint256[] memory,
+            address[] memory
+        )
+    {
         Election storage election = elections[_electionId];
-        require(!election.isOpen, "Election is still open");
+        require(
+            voters[msg.sender].voted || isOwner(msg.sender),
+            "Only voted voters or admin can view results"
+        );
 
         Position storage position = election.positions[_positionName];
         uint256[] memory candidateIds = position.candidateIds;
         uint256[] memory voteCounts = new uint256[](candidateIds.length);
+        address[] memory candidateAddresses = new address[](
+            candidateIds.length
+        );
         for (uint256 i = 0; i < candidateIds.length; i++) {
             uint256 candidateId = candidateIds[i];
-            voteCounts[i] = candidatesByElection[_electionId][candidateId].voteCount;
+            voteCounts[i] = candidatesByElection[_electionId][candidateId]
+                .voteCount;
+            candidateAddresses[i] = candidatesByElection[_electionId][
+                candidateId
+            ].addr;
         }
 
-        return (position.name, candidateIds, voteCounts);
+        return (position.name, candidateIds, voteCounts, candidateAddresses);
     }
 
-    function getElectionProgress(uint256 _electionId, string memory _positionName) public view validElection(_electionId) returns (string memory, uint256[] memory, uint256[] memory) {
-        Election storage election = elections[_electionId];
-        require(election.isOpen, "Election is not open");
-
-        Position storage position = election.positions[_positionName];
+    function getElectionProgress(
+        uint256 _electionId,
+        string memory _positionName
+    )
+        public
+        view
+        onlyOwner
+        validElection(_electionId)
+        returns (
+            string memory,
+            uint256[] memory,
+            uint256[] memory,
+            address[] memory
+        )
+    {
+        Position storage position = elections[_electionId].positions[
+            _positionName
+        ];
         uint256[] memory candidateIds = position.candidateIds;
         uint256[] memory voteCounts = new uint256[](candidateIds.length);
+        address[] memory candidateAddresses = new address[](
+            candidateIds.length
+        );
         for (uint256 i = 0; i < candidateIds.length; i++) {
             uint256 candidateId = candidateIds[i];
-            voteCounts[i] = candidatesByElection[_electionId][candidateId].voteCount;
+            voteCounts[i] = candidatesByElection[_electionId][candidateId]
+                .voteCount;
+            candidateAddresses[i] = candidatesByElection[_electionId][
+                candidateId
+            ].addr;
         }
 
-        return (position.name, candidateIds, voteCounts);
+        return (position.name, candidateIds, voteCounts, candidateAddresses);
     }
 
-    function getVoter(address _voterAddress) public view returns (
-        string memory,
-        string memory,
-        string memory,
-        string memory,
-        string memory,
-        address,
-        bool,
-        bool
-    ) {
-        require(voters[_voterAddress].metamaskAddress != address(0) && bytes(voters[_voterAddress].firstName).length > 0, "Voter does not exist");
+    function getVoter(
+        address _voterAddress
+    )
+        public
+        view
+        returns (
+            string memory,
+            string memory,
+            string memory,
+            string memory,
+            string memory,
+            address,
+            bool,
+            bool
+        )
+    {
+        require(
+            voters[_voterAddress].metamaskAddress != address(0) &&
+                bytes(voters[_voterAddress].firstName).length > 0,
+            "Voter does not exist"
+        );
         Voter storage voter = voters[_voterAddress];
         return (
             voter.firstName,
@@ -384,47 +530,53 @@ contract Voting is Ownable, ReentrancyGuard {
         return approvedVoters[index];
     }
 
-    function getElection(uint256 _electionId) public view validElection(_electionId) returns (
-        string memory,
-        bool,
-        uint256,
-        uint256,
-        string[] memory
-    ) {
+    function getElection(
+        uint256 _electionId
+    )
+        public
+        view
+        validElection(_electionId)
+        returns (string memory, uint256, uint256, string[] memory)
+    {
         Election storage election = elections[_electionId];
         return (
             election.name,
-            election.isOpen,
             election.startTime,
             election.endTime,
             election.positionNames
         );
     }
 
-    function isVoterPending(address _voterAddress) internal view returns (bool) {
-for (uint256 i = 0; i < pendingVoters.length; i++) {
-if (pendingVoters[i] == _voterAddress) {
-return true;
-}
-}
-return false;
-}
-function removePendingVoter(address _voterAddress) internal {
-    for (uint256 i = 0; i < pendingVoters.length; i++) {
-        if (pendingVoters[i] == _voterAddress) {
-            pendingVoters[i] = pendingVoters[pendingVoters.length - 1];
-            pendingVoters.pop();
-            break;
+    function isVoterPending(
+        address _voterAddress
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < pendingVoters.length; i++) {
+            if (pendingVoters[i] == _voterAddress) {
+                return true;
+            }
         }
+        return false;
     }
-}
 
-function isValidCandidate(uint256[] memory _candidateIds, uint256 _candidateId) internal pure returns (bool) {
-    for (uint256 i = 0; i < _candidateIds.length; i++) {
-        if (_candidateIds[i] == _candidateId) {
-            return true;
+    function removePendingVoter(address _voterAddress) internal {
+        for (uint256 i = 0; i < pendingVoters.length; i++) {
+            if (pendingVoters[i] == _voterAddress) {
+                pendingVoters[i] = pendingVoters[pendingVoters.length - 1];
+                pendingVoters.pop();
+                break;
+            }
         }
     }
-    return false;
-}
+
+    function isValidCandidate(
+        uint256[] memory _candidateIds,
+        uint256 _candidateId
+    ) internal pure returns (bool) {
+        for (uint256 i = 0; i < _candidateIds.length; i++) {
+            if (_candidateIds[i] == _candidateId) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

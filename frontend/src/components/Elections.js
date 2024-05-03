@@ -18,16 +18,69 @@ import {
   Alert,
   IconButton,
   Tooltip,
+  Modal,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   Home as HomeIcon,
   Event as EventIcon,
   HowToVote as HowToVoteIcon,
-  PlayArrow as PlayArrowIcon,
-  Stop as StopIcon,
   Update as UpdateIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
+
+const ErrorPopup = ({ message, onClose }) => (
+  <Modal open={true} onClose={onClose}>
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'white',
+        boxShadow: 24,
+        p: 4,
+        outline: 'none',
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
+        Error
+      </Typography>
+      <Typography>{message}</Typography>
+      <Button variant="contained" onClick={onClose} sx={{ mt: 2 }}>
+        OK
+      </Button>
+    </Box>
+  </Modal>
+);
+
+const SuccessPopup = ({ message, onClose }) => (
+  <Modal open={true} onClose={onClose}>
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'white',
+        boxShadow: 24,
+        p: 4,
+        outline: 'none',
+      }}
+    >
+      <Box display="flex" alignItems="center" mb={2}>
+        <CheckCircleIcon color="success" fontSize="large" />
+        <Typography variant="h6" ml={1}>
+          Success
+        </Typography>
+      </Box>
+      <Typography>{message}</Typography>
+      <Button variant="contained" onClick={onClose} sx={{ mt: 2 }}>
+        OK
+      </Button>
+    </Box>
+  </Modal>
+);
 
 const ElectionCreationForm = () => {
   const navigate = useNavigate();
@@ -41,10 +94,15 @@ const ElectionCreationForm = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const fetchElections = async () => {
       try {
+        await VotingService.connectToMetamask();
         setLoading(true);
         const electionCount = await VotingService.getElectionCount();
         const electionDetails = [];
@@ -54,7 +112,6 @@ const ElectionCreationForm = () => {
           electionDetails.push({
             id: i,
             name: details.name,
-            isOpen: details.isOpen,
             startTime: details.startTime,
             endTime: details.endTime,
             positionNames: details.positionNames || [],
@@ -66,11 +123,43 @@ const ElectionCreationForm = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching elections:', error);
+        setErrorMessage('Failed to fetch elections. Please try again.');
+        setShowErrorPopup(true);
         setLoading(false);
       }
     };
 
     fetchElections();
+
+    const handleContractEvents = (eventName, callback) => {
+      if (VotingService.contract) {
+        VotingService.contract.on(eventName, callback);
+      }
+    };
+
+    handleContractEvents('ElectionCreated', (electionId, name) => {
+      setSuccessMessage(`Election created: ${name}`);
+      setShowSuccessPopup(true);
+    });
+
+    handleContractEvents('PositionCreated', (electionId, positionName) => {
+      setSuccessMessage(`Position created: ${positionName}`);
+      setShowSuccessPopup(true);
+    });
+
+    handleContractEvents('ElectionTimeExtended', (electionId, newEndTime) => {
+      setSuccessMessage(`Election time extended for Election ID: ${electionId}`);
+      setShowSuccessPopup(true);
+    });
+
+    return () => {
+      // Unsubscribe from contract events when the component unmounts
+      if (VotingService.contract) {
+        VotingService.contract.removeAllListeners('ElectionCreated');
+        VotingService.contract.removeAllListeners('PositionCreated');
+        VotingService.contract.removeAllListeners('ElectionTimeExtended');
+      }
+    };
   }, []);
 
   const handleCreateElection = async () => {
@@ -80,24 +169,23 @@ const ElectionCreationForm = () => {
 
       await VotingService.createElection(electionName, startTimeTimestamp, endTimeTimestamp);
       console.log('Election created');
-      setSnackbarMessage('Election created successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
       setElectionName('');
       setStartTime('');
       setEndTime('');
       const electionCount = await VotingService.getElectionCount();
       const newElection = await VotingService.getElection(electionCount);
-      setElections([...elections, {
-        ...newElection,
-        startTime: new Date(newElection.startTime * 1000).toISOString().slice(0, 16),
-        endTime: new Date(newElection.endTime * 1000).toISOString().slice(0, 16),
-      }]);
+      setElections([
+        ...elections,
+        {
+          ...newElection,
+          startTime: new Date(newElection.startTime * 1000).toISOString().slice(0, 16),
+          endTime: new Date(newElection.endTime * 1000).toISOString().slice(0, 16),
+        },
+      ]);
     } catch (error) {
       console.error('Error creating election:', error);
-      setSnackbarMessage('Failed to create election');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      setErrorMessage('Failed to create election. Please try again.');
+      setShowErrorPopup(true);
     }
   };
 
@@ -108,14 +196,10 @@ const ElectionCreationForm = () => {
       const updatedElection = await VotingService.getElection(electionId);
       setSelectedElection(updatedElection);
       setPositionName('');
-      setSnackbarMessage('Position created successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
     } catch (error) {
       console.error('Error creating position:', error);
-      setSnackbarMessage('Failed to create position');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      setErrorMessage('Failed to create position. Please try again.');
+      setShowErrorPopup(true);
     }
   };
 
@@ -131,82 +215,31 @@ const ElectionCreationForm = () => {
     if (!election.isExpanded) {
       try {
         const electionDetails = await VotingService.getElection(election.id);
-        setSelectedElection(electionDetails);
+        setSelectedElection({
+          ...electionDetails,
+          positionNames: electionDetails.positionNames || [],
+        });
       } catch (error) {
         console.error('Error fetching election details:', error);
+        setErrorMessage('Failed to fetch election details. Please try again.');
+        setShowErrorPopup(true);
       }
     } else {
       setSelectedElection(null);
     }
   };
 
-  const handleStartElection = async (electionId) => {
-    try {
-      const election = await VotingService.getElection(electionId);
-      const currentTime = Math.floor(Date.now() / 1000);
-  
-      if (currentTime >= Number(election.startTime)) {
-        await VotingService.openElection(electionId);
-        console.log('Election started');
-        const updatedElection = await VotingService.getElection(electionId);
-        setSelectedElection(updatedElection);
-        setSnackbarMessage('Election started successfully');
-        setSnackbarSeverity('success');
-        setSnackbarOpen(true);
-      } else {
-        setSnackbarMessage('Election start time has not reached');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-      }
-    } catch (error) {
-      console.error('Error starting election:', error);
-      setSnackbarMessage('Failed to start election');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    }
-  };
-  
-
-  const handleEndElection = async (electionId) => {
-    try {
-      await VotingService.closeElection(electionId);
-      console.log('Election ended');
-      const updatedElection = await VotingService.getElection(electionId);
-      setSelectedElection(updatedElection);
-      setSnackbarMessage('Election ended successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-    } catch (error) {
-      console.error('Error ending election:', error);
-      setSnackbarMessage('Failed to end election');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    }
-  };
-
   const handleExtendElection = async (electionId, newEndTime) => {
     try {
-      const election = await VotingService.getElection(electionId);
-  
-      if (election.isOpen) {
-        const newEndTimeTimestamp = Math.floor(new Date(newEndTime).getTime() / 1000);
-        await VotingService.extendElectionTime(electionId, newEndTimeTimestamp);
-        console.log('Election extended');
-        const updatedElection = await VotingService.getElection(electionId);
-        setSelectedElection(updatedElection);
-        setSnackbarMessage('Election extended successfully');
-        setSnackbarSeverity('success');
-        setSnackbarOpen(true);
-      } else {
-        setSnackbarMessage('Election is not open');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-      }
+      const newEndTimeTimestamp = Math.floor(new Date(newEndTime).getTime() / 1000);
+      await VotingService.extendElectionTime(electionId, newEndTimeTimestamp);
+      console.log('Election extended');
+      const updatedElection = await VotingService.getElection(electionId);
+      setSelectedElection(updatedElection);
     } catch (error) {
       console.error('Error extending election:', error);
-      setSnackbarMessage('Failed to extend election');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      setErrorMessage('Failed to extend election. Please try again.');
+      setShowErrorPopup(true);
     }
   };
 
@@ -215,6 +248,10 @@ const ElectionCreationForm = () => {
       return;
     }
     setSnackbarOpen(false);
+  };
+
+  const handleSuccessPopupClose = () => {
+    setShowSuccessPopup(false);
   };
 
   return (
@@ -270,6 +307,9 @@ const ElectionCreationForm = () => {
             InputLabelProps={{
               shrink: true,
             }}
+            inputProps={{
+              min: startTime,
+            }}
           />
         </Grid>
         <Grid item xs={12}>
@@ -308,12 +348,6 @@ const ElectionCreationForm = () => {
                     secondary={new Date(Number(election.endTime) * 1000).toLocaleString()}
                   />
                 </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Status"
-                    secondary={election.isOpen ? 'Open' : 'Closed'}
-                  />
-                </ListItem>
               </List>
 
               <Typography variant="h6" gutterBottom>
@@ -329,10 +363,7 @@ const ElectionCreationForm = () => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleCreatePosition(election.id)}
-                  >
+                  <Button variant="contained" onClick={() => handleCreatePosition(election.id)}>
                     Create Position
                   </Button>
                 </Grid>
@@ -343,6 +374,7 @@ const ElectionCreationForm = () => {
               </Typography>
               <List>
                 {selectedElection &&
+                  selectedElection.positionNames &&
                   selectedElection.positionNames.map((position, index) => (
                     <ListItem key={index}>
                       <ListItemText primary={position} />
@@ -352,37 +384,13 @@ const ElectionCreationForm = () => {
 
               <Grid container spacing={2} justifyContent="flex-end" sx={{ marginTop: 2 }}>
                 <Grid item>
-                  <Tooltip title="Start Election">
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => handleStartElection(election.id)}
-                      disabled={election.isOpen}
-                      startIcon={<PlayArrowIcon />}
-                    >
-                      Start
-                    </Button>
-                  </Tooltip>
-                </Grid>
-                <Grid item>
-                  <Tooltip title="End Election">
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={() => handleEndElection(election.id)}
-                      disabled={!election.isOpen}
-                      startIcon={<StopIcon />}
-                    >
-                      End
-                    </Button>
-                  </Tooltip>
-                </Grid>
-                <Grid item>
                   <TextField
                     label="Extend End Time"
                     type="datetime-local"
                     value={selectedElection?.extendedEndTime || ''}
-                    onChange={(e) => setSelectedElection({ ...selectedElection, extendedEndTime: e.target.value })}
+                    onChange={(e) =>
+                      setSelectedElection({ ...selectedElection, extendedEndTime: e.target.value })
+                    }
                     InputLabelProps={{
                       shrink: true,
                     }}
@@ -417,6 +425,14 @@ const ElectionCreationForm = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      {showErrorPopup && (
+        <ErrorPopup message={errorMessage} onClose={() => setShowErrorPopup(false)} />
+      )}
+
+      {showSuccessPopup && (
+        <SuccessPopup message={successMessage} onClose={handleSuccessPopupClose} />
+      )}
     </Box>
   );
 };

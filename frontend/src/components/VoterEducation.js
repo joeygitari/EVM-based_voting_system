@@ -32,7 +32,7 @@ import { styled } from '@mui/material/styles';
 import { ExpandMore as ExpandMoreIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 const EducationContainer = styled(Box)(({ theme }) => ({
-  backgroundColor: theme.palette.background.default,
+  background: 'linear-gradient(45deg, #f5f7fa 0%, #c3cfe2 100%)',
   padding: theme.spacing(8, 0),
   minHeight: '100vh',
   display: 'flex',
@@ -130,6 +130,27 @@ const ResourceCard = styled(Card)(({ theme }) => ({
 const ResourceAvatar = styled(Avatar)(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,
   marginRight: theme.spacing(2),
+}));
+
+const AccordionStyled = styled(Accordion)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  '&::before': {
+    display: 'none',
+  },
+}));
+
+const AccordionSummaryStyled = styled(AccordionSummary)(({ theme }) => ({
+  backgroundColor: theme.palette.action.hover,
+  '&.Mui-expanded': {
+    minHeight: 'auto',
+  },
+  '& .MuiAccordionSummary-content.Mui-expanded': {
+    margin: theme.spacing(2, 0),
+  },
+}));
+
+const AccordionDetailsStyled = styled(AccordionDetails)(({ theme }) => ({
+  padding: theme.spacing(2),
 }));
 
 const VoterEducation = () => {
@@ -432,7 +453,7 @@ const VoterEducation = () => {
             {resources.slice(0, 2).map((resource, index) => (
               <ResourceCard key={index}>
                 <ResourceAvatar>
-                <Typography variant="h6">{index + 1}</Typography>
+                  <Typography variant="h6">{index + 1}</Typography>
                 </ResourceAvatar>
                 <Box>
                   <Typography variant="h6" gutterBottom>
@@ -544,21 +565,21 @@ const VoterEducation = () => {
         </ImageContainer>
 
         <SectionTitle variant="h4">Frequently Asked Questions</SectionTitle>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <AccordionStyled>
+          <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
             <Typography variant="h6">What is MetaMask and why do I need it?</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
+          </AccordionSummaryStyled>
+          <AccordionDetailsStyled>
             <Typography variant="body2">
               MetaMask is a browser extension that allows you to securely interact with the Ethereum blockchain. It acts as a digital wallet and enables you to sign transactions and manage your Ethereum accounts. MetaMask is required to register and vote in our decentralized voting system.
             </Typography>
-          </AccordionDetails>
-        </Accordion>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          </AccordionDetailsStyled>
+        </AccordionStyled>
+        <AccordionStyled>
+          <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
             <Typography variant="h6">How do I install MetaMask?</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
+          </AccordionSummaryStyled>
+          <AccordionDetailsStyled>
             <Typography variant="body2">
               You can install MetaMask by visiting the official website at{' '}
               <Link href="https://metamask.io" target="_blank" rel="noopener noreferrer">
@@ -566,18 +587,38 @@ const VoterEducation = () => {
               </Link>{' '}
               and following the installation instructions for your browser.
             </Typography>
-          </AccordionDetails>
-        </Accordion>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          </AccordionDetailsStyled>
+        </AccordionStyled>
+        <AccordionStyled>
+          <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
             <Typography variant="h6">Is my vote secure and anonymous?</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
+          </AccordionSummaryStyled>
+          <AccordionDetailsStyled>
             <Typography variant="body2">
               Yes, your vote is secured using blockchain technology and cryptographic algorithms. The voting process ensures that your vote remains anonymous and cannot be tampered with.
             </Typography>
-          </AccordionDetails>
-        </Accordion>
+          </AccordionDetailsStyled>
+        </AccordionStyled>
+        <AccordionStyled>
+          <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">Can I change my vote after submitting it?</Typography>
+          </AccordionSummaryStyled>
+          <AccordionDetailsStyled>
+            <Typography variant="body2">
+              No, once you have submitted your vote, it cannot be changed. This is to ensure the integrity and finality of the election results. Make sure to carefully review your choices before casting your vote.
+            </Typography>
+          </AccordionDetailsStyled>
+        </AccordionStyled>
+        <AccordionStyled>
+          <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">When will the election results be announced?</Typography>
+          </AccordionSummaryStyled>
+          <AccordionDetailsStyled>
+            <Typography variant="body2">
+              The election results will be announced immediately after the voting period ends. You can view the real-time results on the voting system website's results page. The official winners will be declared once all votes have been tallied and verified.
+            </Typography>
+          </AccordionDetailsStyled>
+        </AccordionStyled>
 
         <Box mt={8} textAlign="center">
           <Button variant="contained" color="primary" size="large" component={Link} to="/VoterRegistrationForm">

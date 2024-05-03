@@ -50,14 +50,6 @@ class VotingService {
     return this.callContractMethod('isOwner', address);
   }
 
-  async startElection() {
-    return this.callContractMethod('startElection');
-  }
-
-  async endElection() {
-    return this.callContractMethod('endElection');
-  }
-
   async registerVoter(firstName, lastName, registrationNumber, email, phoneNumber, metamaskAddress) {
     return this.callContractMethod('registerVoter', firstName, lastName, registrationNumber, email, phoneNumber, metamaskAddress);
   }
@@ -94,14 +86,6 @@ class VotingService {
     return this.callContractMethod('rejectCandidate', electionId, positionName, candidateId);
   }
 
-  async openElection(electionId) {
-    return this.callContractMethod('openElection', electionId);
-  }
-
-  async closeElection(electionId) {
-    return this.callContractMethod('closeElection', electionId);
-  }
-
   async extendElectionTime(electionId, newEndTime) {
     return this.callContractMethod('extendElectionTime', electionId, newEndTime);
   }
@@ -113,11 +97,16 @@ class VotingService {
   async getElectionResult(electionId, positionName) {
     try {
       const result = await this.callContractMethod('getElectionResult', electionId, positionName);
-      const [name, candidateIds, voteCounts] = result;
+      const [name, candidateIds, voteCounts, candidateAddresses] = result;
+  
+      // Convert voteCounts to numbers using BigInt
+      const voteCountsAsNumbers = voteCounts.map((count) => Number(count));
+  
       return {
         positionName: name,
-        candidateIds: candidateIds.map(id => id.toNumber()),
-        voteCounts: voteCounts.map(count => count.toNumber()),
+        candidateIds: candidateIds.map((id) => id.toString()),
+        voteCounts: voteCountsAsNumbers,
+        candidateAddresses: candidateAddresses,
       };
     } catch (error) {
       console.error('Error calling getElectionResult:', error);
@@ -128,11 +117,12 @@ class VotingService {
   async getElectionProgress(electionId, positionName) {
     try {
       const result = await this.callContractMethod('getElectionProgress', electionId, positionName);
-      const [name, candidateIds, voteCounts] = result;
+      const [name, candidateIds, voteCounts, candidateAddresses] = result;
       return {
         positionName: name,
         candidateIds: candidateIds.map(id => id.toNumber()),
         voteCounts: voteCounts.map(count => count.toNumber()),
+        candidateAddresses: candidateAddresses,
       };
     } catch (error) {
       console.error('Error calling getElectionProgress:', error);
@@ -217,10 +207,9 @@ class VotingService {
       console.log('Result returned from getElection:', result);
   
       if (result && Array.isArray(result)) {
-        const [name, isOpen, startTime, endTime, positionNames] = result;
+        const [name, startTime, endTime, positionNames] = result;
         console.log('Destructured values from result:', {
           name,
-          isOpen,
           startTime,
           endTime,
           positionNames,
@@ -229,7 +218,6 @@ class VotingService {
         const election = {
           id: electionId,
           name,
-          isOpen,
           startTime: parseInt(startTime, 10),
           endTime: parseInt(endTime, 10),
           positionNames,
@@ -252,13 +240,14 @@ class VotingService {
 
   async getCandidate(electionId, candidateId) {
     try {
-      const result = await this.callContractMethod('getCandidate', electionId, candidateId);
-      const [id, name, voteCount, approved] = result;
+      const result = await this.callContractMethod('candidatesByElection', electionId, candidateId);
+      const [id, name, voteCount, approved, address] = result;
       return {
         id: id.toNumber(),
         name,
         voteCount: voteCount.toNumber(),
         approved,
+        address,
       };
     } catch (error) {
       console.error('Error calling getCandidate:', error);
@@ -327,7 +316,6 @@ class VotingService {
     }
   }
     
-
   async listenToContractEvents(eventName, callback) {
     if (!this.contract) {
       await this.connectToMetamask();

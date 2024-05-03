@@ -3,7 +3,9 @@ require("@nomicfoundation/hardhat-ignition-ethers");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
 
-/** @type import('hardhat/config').HardhatUserConfig */
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
 module.exports = {
   solidity: {
     version: "0.8.24",
@@ -26,6 +28,8 @@ module.exports = {
       chainId: 1337,
       gas: 10000000,
       allowUnlimitedContractSize: true,
+      saveState: true,
+      saveStateFile: "./hardhat-network-state.json",
     },
     localhost: {
       url: "http://127.0.0.1:8545",
