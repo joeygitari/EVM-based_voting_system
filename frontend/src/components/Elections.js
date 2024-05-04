@@ -138,17 +138,17 @@ const ElectionCreationForm = () => {
     };
 
     handleContractEvents('ElectionCreated', (electionId, name) => {
-      setSuccessMessage(`Election created: ${name}`);
+      setSuccessMessage(`Election created successfully: ${name}`);
       setShowSuccessPopup(true);
     });
 
     handleContractEvents('PositionCreated', (electionId, positionName) => {
-      setSuccessMessage(`Position created: ${positionName}`);
+      setSuccessMessage(`Position created successfully: ${positionName}`);
       setShowSuccessPopup(true);
     });
 
     handleContractEvents('ElectionTimeExtended', (electionId, newEndTime) => {
-      setSuccessMessage(`Election time extended for Election ID: ${electionId}`);
+      setSuccessMessage(`Election time extended successfully for Election ID: ${electionId}`);
       setShowSuccessPopup(true);
     });
 
@@ -232,6 +232,15 @@ const ElectionCreationForm = () => {
   const handleExtendElection = async (electionId, newEndTime) => {
     try {
       const newEndTimeTimestamp = Math.floor(new Date(newEndTime).getTime() / 1000);
+      const currentTime = Math.floor(Date.now() / 1000);
+      const electionEndTime = selectedElection.endTime;
+
+      if (currentTime > electionEndTime) {
+        setErrorMessage('Election has already ended. Cannot extend the election time.');
+        setShowErrorPopup(true);
+        return;
+      }
+
       await VotingService.extendElectionTime(electionId, newEndTimeTimestamp);
       console.log('Election extended');
       const updatedElection = await VotingService.getElection(electionId);
