@@ -315,6 +315,20 @@ class VotingService {
       throw error;
     }
   }
+  async listenToContractEvents(eventName, callback) {
+    if (!this.contract) {
+      await this.connectToMetamask();
+    }
+    this.contract.on(eventName, callback);
+  }
+
+  async removeContractListener(eventName, callback) {
+    if (!this.contract) {
+      await this.connectToMetamask();
+    }
+    this.contract.off(eventName, callback);
+  }
+
     
   async listenToContractEvents(eventName, callback) {
     if (!this.contract) {
