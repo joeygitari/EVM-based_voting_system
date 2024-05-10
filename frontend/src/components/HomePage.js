@@ -186,7 +186,7 @@ const HomePage = () => {
         Learn More
       </LearnMoreButton>
       <ButtonContainer>
-        <CustomButton component={Link} to="/registration" variant="contained" color="primary">
+        <CustomButton component={Link} to="/VoterRegistrationForm" variant="contained" color="primary">
           Register
         </CustomButton>
         <CustomButton component={Link} to="/login" variant="contained" color="secondary">

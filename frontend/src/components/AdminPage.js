@@ -341,7 +341,7 @@ const AdminPage = () => {
             <ListItemText primary="Rejected Candidates" />
           </AdminNavLink>
           <Divider />
-          <AdminNavLink to="/CandidateRegistration">
+          <AdminNavLink to="/CandidateForm">
             <ListItemIcon>
               <HowToRegOutlined />
             </ListItemIcon>
