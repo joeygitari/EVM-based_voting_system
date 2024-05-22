@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,11 +16,9 @@ import {
   Card,
   CardContent,
   CardActions,
+  CardMedia,
   IconButton,
-  Avatar,
   Tooltip,
-  Badge,
-  Switch,
   AppBar,
   Toolbar,
   Drawer,
@@ -37,22 +35,12 @@ import {
   Event,
   Dashboard,
   Settings,
-  Notifications,
   AccountCircle,
   People,
-  Assignment,
-  Assessment,
-  VerifiedUser,
-  Block,
-  Pending,
-  AddBox,
-  Ballot,
-  HowToRegOutlined,
   Menu as MenuIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
 } from '@mui/icons-material';
-import VotingService from './VotingService';
 
 const drawerWidth = 240;
 
@@ -131,38 +119,6 @@ const LogoutButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const DashboardCard = styled(Card)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  cursor: 'pointer',
-  transition: 'transform 0.3s',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-  },
-}));
-
-const DashboardCardContent = styled(CardContent)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
-
-const DashboardCardIcon = styled(Avatar)(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
-  width: theme.spacing(6),
-  height: theme.spacing(6),
-  marginBottom: theme.spacing(2),
-}));
-
-const DashboardCardTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 'bold',
-  textAlign: 'center',
-}));
-
 const AdminPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -170,84 +126,8 @@ const AdminPage = () => {
   const [openElection, setOpenElection] = useState(false);
   const [openCandidate, setOpenCandidate] = useState(false);
   const navigate = useNavigate();
-  const [totalElections, setTotalElections] = useState(0);
-  const [totalVoters, setTotalVoters] = useState(0);
-  const [totalCandidates, setTotalCandidates] = useState(0);
-  const [pendingVoters, setPendingVoters] = useState(0);
-  const [pendingCandidates, setPendingCandidates] = useState(0);
-  const [upcomingElections, setUpcomingElections] = useState(0);
-  const [ongoingElections, setOngoingElections] = useState(0);
-  const [completedElections, setCompletedElections] = useState(0);
-  const [notifications, setNotifications] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const electionCount = await VotingService.getElectionCount();
-        setTotalElections(electionCount);
-
-        const approvedVoters = await VotingService.getApprovedVoters();
-        setTotalVoters(approvedVoters.length);
-
-        const registeredCandidates = await VotingService.getRegisteredCandidates();
-        setTotalCandidates(registeredCandidates.length);
-
-        const pendingVotersCount = await VotingService.getPendingVotersCount();
-        setPendingVoters(pendingVotersCount);
-
-        const pendingCandidatesCount = await VotingService.getPendingCandidatesCount();
-        setPendingCandidates(pendingCandidatesCount);
-
-        const upcomingElectionsCount = await VotingService.getUpcomingElectionsCount();
-        setUpcomingElections(upcomingElectionsCount);
-
-        const ongoingElectionsCount = await VotingService.getOngoingElectionsCount();
-        setOngoingElections(ongoingElectionsCount);
-
-        const completedElectionsCount = await VotingService.getCompletedElectionsCount();
-        setCompletedElections(completedElectionsCount);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    const handleVoterRegistered = (voterAddress, email) => {
-      setNotifications((prevNotifications) => [
-        ...prevNotifications,
-        `New voter registered: ${email}`,
-      ]);
-    };
-
-    const handleCandidateRegistered = (electionId, positionName, candidateName) => {
-      setNotifications((prevNotifications) => [
-        ...prevNotifications,
-        `New candidate registered: ${candidateName} for ${positionName} in Election ${electionId}`,
-      ]);
-    };
-
-    const handleVoteCast = (electionId, voterAddress, positionName, candidateId) => {
-      setNotifications((prevNotifications) => [
-        ...prevNotifications,
-        `Vote cast by ${voterAddress} for ${positionName} in Election ${electionId}`,
-      ]);
-    };
-
-    VotingService.listenToContractEvents('VoterRegistered', handleVoterRegistered);
-    VotingService.listenToContractEvents('CandidateRegistered', handleCandidateRegistered);
-    VotingService.listenToContractEvents('VoteCast', handleVoteCast);
-
-    return () => {
-      VotingService.removeContractListener('VoterRegistered', handleVoterRegistered);
-      VotingService.removeContractListener('CandidateRegistered', handleCandidateRegistered);
-      VotingService.removeContractListener('VoteCast', handleVoteCast);
-    };
-  }, []);
 
   const handleVotersClick = () => {
     setOpenVoters(!openVoters);
@@ -263,7 +143,7 @@ const AdminPage = () => {
 
   const handleLogout = async () => {
     try {
-      await VotingService.logout();
+      // Implement logout logic
       navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
@@ -290,62 +170,15 @@ const AdminPage = () => {
         </AdminNavItem>
         <DropdownContent in={openVoters} timeout="auto" unmountOnExit>
           <AdminNavLink to="/PendingVotersPage">
-            <ListItemIcon>
-              <Pending />
-            </ListItemIcon>
             <ListItemText primary="Pending Voters" />
-            <Badge badgeContent={pendingVoters} color="primary" />
           </AdminNavLink>
           <Divider />
           <AdminNavLink to="/ApprovedVoters">
-            <ListItemIcon>
-              <VerifiedUser />
-            </ListItemIcon>
             <ListItemText primary="Approved Voters" />
           </AdminNavLink>
           <Divider />
           <AdminNavLink to="/RejectedVoters">
-            <ListItemIcon>
-              <Block />
-            </ListItemIcon>
             <ListItemText primary="Rejected Voters" />
-          </AdminNavLink>
-        </DropdownContent>
-        <AdminNavItem button onClick={handleCandidateClick}>
-          <ListItemIcon>
-            <Person />
-          </ListItemIcon>
-          <ListItemText primary="Candidate Management" />
-          {openCandidate ? <ExpandLess /> : <ExpandMore />}
-        </AdminNavItem>
-        <DropdownContent in={openCandidate} timeout="auto" unmountOnExit>
-          <AdminNavLink to="/CandidateApproval">
-            <ListItemIcon>
-              <Pending />
-            </ListItemIcon>
-            <ListItemText primary="Pending Candidates" />
-            <Badge badgeContent={pendingCandidates} color="primary" />
-          </AdminNavLink>
-          <Divider />
-          <AdminNavLink to="/ApprovedCandidates">
-            <ListItemIcon>
-              <VerifiedUser />
-            </ListItemIcon>
-            <ListItemText primary="Approved Candidates" />
-          </AdminNavLink>
-          <Divider />
-          <AdminNavLink to="/RejectedCandidates">
-            <ListItemIcon>
-              <Block />
-            </ListItemIcon>
-            <ListItemText primary="Rejected Candidates" />
-          </AdminNavLink>
-          <Divider />
-          <AdminNavLink to="/CandidateForm">
-            <ListItemIcon>
-              <HowToRegOutlined />
-            </ListItemIcon>
-            <ListItemText primary="Candidate Registration" />
           </AdminNavLink>
         </DropdownContent>
         <AdminNavItem button onClick={handleElectionClick}>
@@ -357,24 +190,39 @@ const AdminPage = () => {
         </AdminNavItem>
         <DropdownContent in={openElection} timeout="auto" unmountOnExit>
           <AdminNavLink to="/Elections">
-            <ListItemIcon>
-              <AddBox />
-            </ListItemIcon>
             <ListItemText primary="Create Election" />
           </AdminNavLink>
           <Divider />
           <AdminNavLink to="/ElectionDetails">
-            <ListItemIcon>
-              <Ballot />
-            </ListItemIcon>
             <ListItemText primary="View Elections" />
           </AdminNavLink>
           <Divider />
           <AdminNavLink to="/Results">
-            <ListItemIcon>
-              <Assessment />
-            </ListItemIcon>
             <ListItemText primary="Election Results" />
+          </AdminNavLink>
+        </DropdownContent>
+        <AdminNavItem button onClick={handleCandidateClick}>
+          <ListItemIcon>
+            <Person />
+          </ListItemIcon>
+          <ListItemText primary="Candidate Management" />
+          {openCandidate ? <ExpandLess /> : <ExpandMore />}
+        </AdminNavItem>
+        <DropdownContent in={openCandidate} timeout="auto" unmountOnExit>
+          <AdminNavLink to="/CandidateApproval">
+            <ListItemText primary="Pending Candidates" />
+          </AdminNavLink>
+          <Divider />
+          <AdminNavLink to="/ApprovedCandidates">
+            <ListItemText primary="Approved Candidates" />
+          </AdminNavLink>
+          <Divider />
+          <AdminNavLink to="/RejectedCandidates">
+            <ListItemText primary="Rejected Candidates" />
+          </AdminNavLink>
+          <Divider />
+          <AdminNavLink to="/CandidateForm">
+            <ListItemText primary="Candidate Registration" />
           </AdminNavLink>
         </DropdownContent>
         <AdminNavItem>
@@ -414,34 +262,29 @@ const AdminPage = () => {
           >
             <MenuIcon />
           </IconButton>
-          <AdminTitle variant={isMobile ? 'h6' : 'h5'}>ADMINISTRATOR</AdminTitle>
+          <AdminTitle variant={isMobile ? 'h6' : 'h5'} sx={{ color: 'white' }}>
+            ADMINISTRATOR
+          </AdminTitle>
           <Box sx={{ flexGrow: 1 }} />
-          <Tooltip title="Notifications">
-          <IconButton color="inherit">
-            <Badge badgeContent={notifications.length} color="error">
-              <Notifications />
-            </Badge>
-          </IconButton>
-          </Tooltip>
           <Tooltip title="Settings">
-          <IconButton color="inherit">
-            <Settings />
-          </IconButton>
+            <IconButton color="inherit">
+              <Settings />
+            </IconButton>
           </Tooltip>
           <Tooltip title="Account">
-          <IconButton color="inherit">
-            <AccountCircle />
-          </IconButton>
+            <IconButton color="inherit">
+              <AccountCircle />
+            </IconButton>
           </Tooltip>
           <Tooltip title={darkMode ? 'Light Mode' : 'Dark Mode'}>
-          <IconButton color="inherit" onClick={handleDarkModeToggle}>
-            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
+            <IconButton color="inherit" onClick={handleDarkModeToggle}>
+              {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
           </Tooltip>
-          </Toolbar>
-          </AppBar>
-          <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
-          <Drawer
+        </Toolbar>
+      </AppBar>
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+        <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
@@ -452,136 +295,174 @@ const AdminPage = () => {
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
-          >
+        >
           {drawer}
-          </Drawer>
-          <Drawer
+        </Drawer>
+        <Drawer
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
           open
-          >
+        >
           {drawer}
-          </Drawer>
-          </Box>
-          <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
-          <Toolbar />
-          <Grid container spacing={4} justifyContent="center">
+        </Drawer>
+      </Box>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
+        <Toolbar />
+        <Grid container spacing={4}>
           <Grid item xs={12} sm={6} md={4}>
-          <DashboardCard onClick={() => navigate('/ElectionDetails')}>
-            <DashboardCardContent>
-              <DashboardCardIcon>
-                <HowToVote />
-              </DashboardCardIcon>
-              <DashboardCardTitle variant="h6">Total Elections</DashboardCardTitle>
-              <Typography variant="h4">{totalElections}</Typography>
-            </DashboardCardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                View Elections
-              </Button>
-            </CardActions>
-          </DashboardCard>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-          <DashboardCard onClick={() => navigate('/ApprovedVoters')}>
-            <DashboardCardContent>
-              <DashboardCardIcon>
-                <People />
-              </DashboardCardIcon>
-              <DashboardCardTitle variant="h6">Total Voters</DashboardCardTitle>
-              <Typography variant="h4">{totalVoters}</Typography>
-            </DashboardCardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                View Voters
-              </Button>
-            </CardActions>
-          </DashboardCard>
+            <Card>
+              <CardMedia
+                component="img"
+                height="200"
+                image="https://source.unsplash.com/random?election"
+                alt="Election Management"
+              />
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  Election Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create, view, and manage elections. Set up election details, positions, and candidates.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary" onClick={() => navigate('/Elections')}>
+                  Create Election
+                </Button>
+                <Button size="small" color="primary" onClick={() => navigate('/ElectionDetails')}>
+                  View Elections
+                </Button>
+              </CardActions>
+            </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-          <DashboardCard onClick={() => navigate('/CandidateApproval')}>
-            <DashboardCardContent>
-              <DashboardCardIcon>
-                <Person />
-              </DashboardCardIcon>
-              <DashboardCardTitle variant="h6">Total Candidates</DashboardCardTitle>
-              <Typography variant="h4">{totalCandidates}</Typography>
-            </DashboardCardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                View Candidates
-              </Button>
-            </CardActions>
-          </DashboardCard>
+            <Card>
+              <CardMedia
+                component="img"
+                height="200"
+                image="https://source.unsplash.com/random?voters"
+                alt="Voter Management"
+              />
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  Voter Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Manage voter registration and approvals. Review pending voters and make approval decisions.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary" onClick={() => navigate('/PendingVotersPage')}>
+                  Pending Voters
+                </Button>
+                <Button size="small" color="primary" onClick={() => navigate('/ApprovedVoters')}>
+                  Approved Voters
+                </Button>
+              </CardActions>
+            </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-          <DashboardCard onClick={() => navigate('/PendingVotersPage')}>
-            <DashboardCardContent>
-              <DashboardCardIcon>
-                <Pending />
-              </DashboardCardIcon>
-              <DashboardCardTitle variant="h6">Pending Voters</DashboardCardTitle>
-              <Typography variant="h4">{pendingVoters}</Typography>
-            </DashboardCardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                Review Voters
-              </Button>
-            </CardActions>
-          </DashboardCard>
+            <Card>
+              <CardMedia
+                component="img"
+                height="200"
+                image="https://source.unsplash.com/random?candidate"
+                alt="Candidate Management"
+              />
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  Candidate Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Manage candidate registration and approvals. Review pending candidates and make approval decisions.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary" onClick={() => navigate('/CandidateApproval')}>
+                  Pending Candidates
+                </Button>
+                <Button size="small" color="primary" onClick={() => navigate('/ApprovedCandidates')}>
+                  Approved Candidates
+                </Button>
+              </CardActions>
+            </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-          <DashboardCard onClick={() => navigate('/CandidateApproval')}>
-            <DashboardCardContent>
-              <DashboardCardIcon>
-                <Pending />
-              </DashboardCardIcon>
-              <DashboardCardTitle variant="h6">Pending Candidates</DashboardCardTitle>
-              <Typography variant="h4">{pendingCandidates}</Typography>
-            </DashboardCardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                Review Candidates
-              </Button>
-            </CardActions>
-          </DashboardCard>
+            <Card>
+              <CardMedia
+                component="img"
+                height="200"
+                image="https://source.unsplash.com/random?results"
+                alt="Election Results"
+              />
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  Election Results
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  View and analyze election results. Generate reports and gain insights into voting trends.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary" onClick={() => navigate('/Results')}>
+                  View Results
+                </Button>
+              </CardActions>
+            </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-          <DashboardCard>
-            <DashboardCardContent>
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <DashboardCardIcon>
-                    <AddBox />
-                  </DashboardCardIcon>
-                  <Typography variant="subtitle1">Upcoming</Typography>
-                  <Typography variant="h6">{upcomingElections}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <DashboardCardIcon>
-                    <Ballot />
-                  </DashboardCardIcon>
-                  <Typography variant="subtitle1">Ongoing</Typography>
-                  <Typography variant="h6">{ongoingElections}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <DashboardCardIcon>
-                    <Assignment />
-                  </DashboardCardIcon>
-                  <Typography variant="subtitle1">Completed</Typography>
-                  <Typography variant="h6">{completedElections}</Typography>
-                </Grid>
-              </Grid>
-            </DashboardCardContent>
-          </DashboardCard>
+            <Card>
+              <CardMedia
+                component="img"
+                height="200"
+                image="https://source.unsplash.com/random?events"
+                alt="Event Logs"
+              />
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  Event Logs
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Monitor and track important events in the voting system. Review logs for auditing purposes.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary" onClick={() => navigate('/Events')}>
+                  View Logs
+                </Button>
+              </CardActions>
+            </Card>
           </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Card>
+              <CardMedia
+                component="img"
+                height="200"
+                image="https://source.unsplash.com/random?register"
+                alt="Voter Registration"
+              />
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  Voter Registration
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Register new voters and manage their information. Collect necessary details for voter eligibility.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary" onClick={() => navigate('/VoterRegistrationForm')}>
+                  Register Voter
+                </Button>
+              </CardActions>
+            </Card>
           </Grid>
-          </Box>
-          </AdminContainer>
-          );
-          };
+        </Grid>
+      </Box>
+    </AdminContainer>
+  );
+};
 
 export default AdminPage;

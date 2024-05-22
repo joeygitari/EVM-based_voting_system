@@ -90,8 +90,8 @@ class VotingService {
     return this.callContractMethod('extendElectionTime', electionId, newEndTime);
   }
 
-  async vote(electionId, positionName, candidateId) {
-    return this.callContractMethod('vote', electionId, positionName, candidateId);
+  async vote(electionId, positionNames, candidateIds) {
+    return this.callContractMethod('vote', electionId, positionNames, candidateIds);
   }
 
   async getElectionResult(electionId, positionName) {

@@ -268,13 +268,11 @@ const ElectionDetails = () => {
       setOpenSnackbar(true);
       return;
     }
-
+  
     try {
-      await Promise.all(
-        Object.entries(selectedCandidates).map(([positionName, candidateId]) =>
-          VotingService.vote(selectedElectionId, positionName, candidateId)
-        )
-      );
+      const positionNames = Object.keys(selectedCandidates);
+      const candidateIds = Object.values(selectedCandidates);
+      await VotingService.vote(selectedElectionId, positionNames, candidateIds);
       setSelectedCandidates({});
       setSnackbarMessage('Vote cast successfully!');
       setSnackbarSeverity('success');

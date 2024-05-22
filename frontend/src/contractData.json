@@ -874,14 +874,14 @@
           "type": "uint256"
         },
         {
-          "internalType": "string",
-          "name": "_positionName",
-          "type": "string"
+          "internalType": "string[]",
+          "name": "_positionNames",
+          "type": "string[]"
         },
         {
-          "internalType": "uint256",
-          "name": "_candidateId",
-          "type": "uint256"
+          "internalType": "uint256[]",
+          "name": "_candidateIds",
+          "type": "uint256[]"
         }
       ],
       "name": "vote",

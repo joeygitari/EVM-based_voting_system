@@ -377,41 +377,43 @@ contract Voting is Ownable, ReentrancyGuard {
 
     function vote(
         uint256 _electionId,
-        string memory _positionName,
-        uint256 _candidateId
-    )
-        public
-        nonReentrant
-        validElection(_electionId)
-        validPosition(_electionId, _positionName)
-        notOwner
-    {
-        Election storage election = elections[_electionId];
-        require(
-            block.timestamp >= election.startTime &&
-                block.timestamp <= election.endTime,
-            "Election is not open for voting"
-        );
-        require(voters[msg.sender].approved, "Voter is not approved");
-        require(!voters[msg.sender].voted, "Voter has already voted");
-        require(
-            msg.sender == voters[msg.sender].metamaskAddress,
-            "Voter's Metamask address does not match"
-        );
+        string[] memory _positionNames,
+        uint256[] memory _candidateIds
+    ) public {
+        require(_positionNames.length == _candidateIds.length, "Invalid input");
 
-        Position storage position = election.positions[_positionName];
-        require(
-            isValidCandidate(position.candidateIds, _candidateId),
-            "Invalid candidate"
-        );
-        require(
-            candidatesByElection[_electionId][_candidateId].approved,
-            "Candidate is not approved"
-        );
+        for (uint256 i = 0; i < _positionNames.length; i++) {
+            string memory positionName = _positionNames[i];
+            uint256 candidateId = _candidateIds[i];
+
+            Election storage election = elections[_electionId];
+            require(
+                block.timestamp >= election.startTime &&
+                    block.timestamp <= election.endTime,
+                "Election is not open for voting"
+            );
+            require(voters[msg.sender].approved, "Voter is not approved");
+            require(!voters[msg.sender].voted, "Voter has already voted");
+            require(
+                msg.sender == voters[msg.sender].metamaskAddress,
+                "Voter's Metamask address does not match"
+            );
+
+            Position storage position = election.positions[positionName];
+            require(
+                isValidCandidate(position.candidateIds, candidateId),
+                "Invalid candidate"
+            );
+            require(
+                candidatesByElection[_electionId][candidateId].approved,
+                "Candidate is not approved"
+            );
+
+            candidatesByElection[_electionId][candidateId].voteCount++;
+            emit VoteCast(_electionId, msg.sender, positionName, candidateId);
+        }
 
         voters[msg.sender].voted = true;
-        candidatesByElection[_electionId][_candidateId].voteCount++;
-        emit VoteCast(_electionId, msg.sender, _positionName, _candidateId);
     }
 
     function getElectionResult(
