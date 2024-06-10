@@ -144,11 +144,13 @@ const ElectionResult = () => {
   };
 
   const getWinners = (positionName) => {
-    if (!electionResults || !electionResults[positionName]) return [];
+    if (!electionResults || !electionResults[positionName] || !selectedElection || Date.now() < selectedElection.endTime) {
+      return [];
+    }
     const { candidateIds, candidateNames, voteCounts } = electionResults[positionName];
-
+  
     if (!candidateNames || candidateNames.length === 0) return [];
-
+  
     const maxVotes = Math.max(...voteCounts);
     const winnerIndices = candidateIds.reduce((indices, id, index) => {
       if (voteCounts[index] === maxVotes) {
@@ -156,7 +158,7 @@ const ElectionResult = () => {
       }
       return indices;
     }, []);
-
+  
     return winnerIndices.map((index) => candidateNames[index]);
   };
 
@@ -279,13 +281,15 @@ const ElectionResult = () => {
                           </Table>
                         </TableContainer>
                         <Box mt={2}>
-                          <Typography variant="subtitle1">
-                            Total Votes: {getTotalVotes(positionName)}
-                          </Typography>
+                        <Typography variant="subtitle1">
+                          Total Votes: {getTotalVotes(positionName)}
+                        </Typography>
+                        {selectedElection && Date.now() >= selectedElection.endTime && (
                           <Typography variant="subtitle1">
                             Winner(s): {getWinners(positionName).join(', ')}
                           </Typography>
-                        </Box>
+                        )}
+                      </Box>
                       </CardContent>
                     </Card>
                   </Grid>
